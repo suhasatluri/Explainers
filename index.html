@@ -48,33 +48,62 @@
   .sub{font-style:italic;color:var(--ink-soft);font-size:clamp(1.05rem,2.6vw,1.35rem);margin-top:1rem;max-width:60ch;margin-left:auto;margin-right:auto}
   .dateline{display:flex;justify-content:space-between;align-items:center;font-family:'JetBrains Mono',monospace;font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint);border-top:1px solid var(--rule);margin-top:1.6rem;padding-top:.7rem;flex-wrap:wrap;gap:.5rem}
 
-  /* editions */
-  .editions{display:grid;grid-template-columns:1fr;gap:0;margin:0 0 2rem;border-bottom:1px solid var(--rule)}
-  @media(min-width:820px){.editions{grid-template-columns:1fr 1fr 1fr}}
-  .edition{
-    display:flex;flex-direction:column;padding:clamp(1.6rem,4vw,2.4rem) clamp(1rem,2.5vw,1.8rem);
-    border-top:1px solid var(--rule);text-decoration:none;color:inherit;position:relative;
-    transition:background .25s,transform .2s;
+  /* ===== editions — three distinct cards, each in its own theme ===== */
+  .editions{
+    display:grid;grid-template-columns:1fr;
+    gap:clamp(1.1rem,2.5vw,1.6rem);
+    margin:clamp(1.8rem,4vw,2.6rem) 0 clamp(2.6rem,5vw,3.6rem);
   }
-  @media(min-width:820px){
-    .edition{border-top:none;border-left:1px solid var(--rule)}
-    .edition:first-child{border-left:none}
-  }
-  .edition:hover{background:var(--paper-2)}
-  .edition:hover .open-tag{color:var(--accent);gap:.7rem}
-  .num{font-family:'JetBrains Mono',monospace;font-size:.66rem;letter-spacing:.16em;color:var(--ink-faint);margin-bottom:1rem}
-  .theme-tag{display:inline-block;align-self:flex-start;font-family:'JetBrains Mono',monospace;font-size:.56rem;letter-spacing:.12em;text-transform:uppercase;padding:.25rem .55rem;border:1px solid var(--rule);border-radius:20px;color:var(--ink-faint);margin-bottom:1rem}
-  .edition h2{font-family:'Playfair Display',serif;font-weight:700;font-size:clamp(1.5rem,3.4vw,2rem);line-height:1.08;margin-bottom:.7rem}
-  .edition .desc{font-size:.95rem;color:var(--ink-soft);margin-bottom:1.1rem;flex:1}
-  .topics{display:flex;flex-wrap:wrap;gap:.35rem;margin-bottom:1.3rem}
-  .topics span{font-family:'JetBrains Mono',monospace;font-size:.58rem;letter-spacing:.04em;color:var(--ink-faint);background:rgba(124,42,56,.07);padding:.18rem .45rem;border-radius:4px}
-  .open-tag{font-family:'JetBrains Mono',monospace;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink);display:inline-flex;align-items:center;gap:.5rem;transition:color .2s,gap .2s}
+  @media(min-width:780px){.editions{grid-template-columns:repeat(3,1fr)}}
 
-  /* color accents per edition */
-  .edition.kafka .num,.edition.kafka .open-tag::after{color:var(--accent)}
-  .edition.certs{}
-  .edition.certs .theme-tag{border-color:var(--navy);color:var(--navy)}
-  .edition.security .theme-tag{}
+  .edition{
+    /* per-card theme tokens — overridden by .kafka / .certs / .security below */
+    --accent:#7c2a38;--card-bg:#f6eeda;--card-ink:#1f1b14;--card-soft:#4d4534;
+    --card-faint:#8a7d61;--card-border:#d8c7a3;--chip-bg:rgba(31,27,20,.06);
+    position:relative;isolation:isolate;overflow:hidden;
+    display:flex;flex-direction:column;
+    padding:clamp(1.5rem,3.2vw,2rem) clamp(1.2rem,2.6vw,1.7rem) clamp(1.3rem,3vw,1.7rem);
+    text-decoration:none;color:var(--card-ink);
+    background:var(--card-bg);
+    border:1.5px solid var(--card-border);border-radius:9px;
+    box-shadow:0 1px 0 rgba(255,255,255,.45) inset, 0 12px 26px -16px rgba(33,26,18,.45);
+    transition:transform .3s cubic-bezier(.2,.7,.2,1), box-shadow .3s;
+  }
+  /* top identity stripe */
+  .edition::before{content:"";position:absolute;top:0;left:0;right:0;height:5px;background:var(--accent);z-index:2}
+  .edition:hover{transform:translateY(-7px);box-shadow:0 1px 0 rgba(255,255,255,.45) inset, 0 24px 42px -18px rgba(33,26,18,.55)}
+
+  .num{font-family:'JetBrains Mono',monospace;font-size:.64rem;letter-spacing:.18em;font-weight:700;color:var(--accent);margin-bottom:.9rem}
+  .theme-tag{align-self:flex-start;font-family:'JetBrains Mono',monospace;font-size:.55rem;letter-spacing:.13em;text-transform:uppercase;padding:.3rem .62rem;border:1px solid var(--card-border);border-radius:20px;color:var(--accent);margin-bottom:1rem}
+  .edition h2{font-family:'Playfair Display',serif;font-weight:700;font-size:clamp(1.5rem,3.2vw,1.95rem);line-height:1.06;color:var(--card-ink);margin-bottom:.4rem}
+  .edition h2::after{content:"";display:block;width:44px;height:2px;background:var(--accent);margin-top:.6rem}
+  .edition .desc{font-size:.93rem;line-height:1.5;color:var(--card-soft);margin:.6rem 0 1.1rem;flex:1}
+  .topics{display:flex;flex-wrap:wrap;gap:.35rem;margin-bottom:1.35rem}
+  .topics span{font-family:'JetBrains Mono',monospace;font-size:.57rem;letter-spacing:.04em;color:var(--card-faint);background:var(--chip-bg);padding:.2rem .5rem;border-radius:5px}
+  .open-tag{font-family:'JetBrains Mono',monospace;font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--card-ink);display:inline-flex;align-items:center;gap:.5rem;transition:gap .25s,color .25s}
+  .edition:hover .open-tag{color:var(--accent);gap:.85rem}
+
+  /* Edition 01 — Kafka — newspaper red */
+  .edition.kafka{--accent:#d83a23;--card-border:#dcc9a4}
+
+  /* Edition 03 — Security — newspaper teal */
+  .edition.security{--accent:#136f63;--card-border:#dcc9a4}
+
+  /* Edition 02 — Certificates — the navy + gold passport (the standout) */
+  .edition.certs{
+    --accent:#cda85a;--card-ink:#f1e7cf;--card-soft:#cdbb8e;--card-faint:#b49a63;
+    --card-border:#a9863a;--chip-bg:rgba(205,168,90,.15);
+    background:radial-gradient(130% 90% at 28% 18%,#23365a,#162540 72%);
+    box-shadow:0 1px 0 rgba(201,162,75,.2) inset, 0 14px 30px -16px rgba(0,0,0,.6);
+  }
+  /* engine-turned guilloché, echoing the passport cover */
+  .edition.certs::after{
+    content:"";position:absolute;inset:0;z-index:-1;opacity:.16;pointer-events:none;mix-blend-mode:screen;
+    background-image:
+      repeating-radial-gradient(circle at 80% 20%,transparent 0 7px,rgba(201,162,75,.5) 7px 7.8px),
+      repeating-radial-gradient(circle at 80% 20%,transparent 0 15px,rgba(201,162,75,.28) 15px 15.7px);
+  }
+  .edition.certs:hover{box-shadow:0 1px 0 rgba(201,162,75,.2) inset, 0 26px 46px -18px rgba(0,0,0,.7)}
 
   footer{border-top:3px double var(--ink);padding:1.6rem 0 3rem;text-align:center;font-family:'JetBrains Mono',monospace;font-size:.64rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint)}
   ::selection{background:var(--accent-2);color:var(--paper)}
@@ -98,7 +127,7 @@
 
     <a class="edition kafka" href="kafka-explained.html">
       <div class="num">Edition 01</div>
-      <span class="theme-tag">The Newspaper</span>
+      <span class="theme-tag">The Kafka Times</span>
       <h2>Apache Kafka</h2>
       <p class="desc">What it actually is, the problem it solves, and why it's so fast — told as a global newspaper distribution system moving stories from writers to readers.</p>
       <div class="topics"><span>topics</span><span>partitions</span><span>brokers</span><span>consumers</span><span>offsets</span></div>
@@ -107,7 +136,7 @@
 
     <a class="edition certs" href="certificates-explained.html">
       <div class="num">Edition 02</div>
-      <span class="theme-tag">The Passport</span>
+      <span class="theme-tag">Bureau of Trust</span>
       <h2>Certificates</h2>
       <p class="desc">Keys, leaf, intermediate and root certs, the chain of trust, and the eternal keystore-vs-truststore confusion — walked through as passports and border control.</p>
       <div class="topics"><span>chain of trust</span><span>keystore</span><span>truststore</span><span>CSR</span></div>
@@ -116,7 +145,7 @@
 
     <a class="edition security" href="security-explained.html">
       <div class="num">Edition 03</div>
-      <span class="theme-tag">The Newspaper</span>
+      <span class="theme-tag">The Security Times</span>
       <h2>The Security Stack</h2>
       <p class="desc">TLS, mTLS, authentication vs authorization, OAuth 2.0, OpenID Connect and JWT — where each fits and how they snap together into one picture.</p>
       <div class="topics"><span>TLS / mTLS</span><span>OAuth 2.0</span><span>OIDC</span><span>JWT</span></div>
