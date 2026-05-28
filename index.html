@@ -76,15 +76,6 @@
   .edition.certs .theme-tag{border-color:var(--navy);color:var(--navy)}
   .edition.security .theme-tag{}
 
-  /* about strip */
-  .about{padding:2rem 0 3rem;display:grid;grid-template-columns:1fr;gap:1.4rem}
-  @media(min-width:760px){.about{grid-template-columns:1.4fr 1fr}}
-  .about h3{font-family:'Playfair Display',serif;font-weight:700;font-size:1.5rem;margin-bottom:.6rem}
-  .about p{font-size:.95rem;color:var(--ink-soft);margin-bottom:.8rem}
-  .recipe{border-left:3px solid var(--accent-2);padding-left:1.1rem}
-  .recipe li{list-style:none;font-size:.92rem;color:var(--ink-soft);padding:.25rem 0;display:flex;gap:.6rem}
-  .recipe li::before{content:"§";color:var(--accent-2);font-weight:700}
-
   footer{border-top:3px double var(--ink);padding:1.6rem 0 3rem;text-align:center;font-family:'JetBrains Mono',monospace;font-size:.64rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint)}
   ::selection{background:var(--accent-2);color:var(--paper)}
 </style>
@@ -133,24 +124,6 @@
     </a>
 
   </main>
-
-  <section class="about">
-    <div>
-      <h3>The idea</h3>
-      <p>Most technical explainers either drown you in jargon or oversimplify until they're wrong. These take a different bet: pick one honest metaphor, commit to it completely, and let you interact with the concept until it clicks.</p>
-      <p>Each edition is a single self-contained HTML file — no build step, no dependencies beyond fonts and a little animation. Open it in any browser.</p>
-    </div>
-    <div class="recipe">
-      <h3 style="margin-bottom:.8rem">The shared recipe</h3>
-      <ul>
-        <li>One sustained metaphor, start to finish</li>
-        <li>Interactive demos over walls of text</li>
-        <li>A jargon decoder for the scary words</li>
-        <li>An honest "where this breaks" section</li>
-        <li>A one-sentence recap you'll actually remember</li>
-      </ul>
-    </div>
-  </section>
 
   <footer>
     The Explainers · Interactive Technical Guides · Open each edition above

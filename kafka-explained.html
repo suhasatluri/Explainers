@@ -60,6 +60,7 @@
     box-shadow:0 2px 0 var(--line);
   }
   nav .brand{font-family:'Fraunces',serif;font-weight:900;font-size:1.15rem;letter-spacing:-.02em;display:flex;align-items:center;gap:.5rem}
+  nav .brand-home{display:inline-flex;align-items:center;gap:inherit;color:inherit;font:inherit;letter-spacing:inherit;text-transform:none;text-decoration:none;border:0;padding:0;cursor:pointer}
   nav .brand .dot{width:11px;height:11px;border-radius:50%;background:var(--red);display:inline-block;animation:pulse 2s infinite}
   @keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.4);opacity:.5}}
   nav ul{list-style:none;display:flex;gap:clamp(.4rem,1.6vw,1.4rem);flex-wrap:wrap;justify-content:flex-end}
@@ -283,8 +284,9 @@
 <div id="progress"></div>
 
 <nav>
-  <div class="brand"><span class="dot"></span>The&nbsp;Kafka&nbsp;Times</div>
+  <div class="brand"><a class="brand-home" href="index.html"><span class="dot"></span>The&nbsp;Kafka&nbsp;Times</a></div>
   <ul>
+    <li><a href="index.html">↩ Explainers</a></li>
     <li><a href="#hero" data-sec>What</a></li>
     <li><a href="#problem" data-sec>Problem</a></li>
     <li><a href="#arch" data-sec>Inside</a></li>
