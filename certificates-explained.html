@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Bureau of Trust — Certificates, Explained as Passports</title>
+<meta name="description" content="An interactive, no-jargon explainer of TLS certificates — keys, leaf, intermediate and root certs, the chain of trust, keystores vs truststores, and CSRs — all told through the metaphor of passports and border control.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="The Bureau of Trust — Certificates, Explained">
+<meta property="og:description" content="Certificates, chains of trust, keystores and truststores — finally made intuitive, through passports and border control.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='4'%20fill='%2316243f'/%3E%3Ccircle%20cx='16'%20cy='13'%20r='6'%20fill='none'%20stroke='%23c9a24b'%20stroke-width='1.4'/%3E%3Cpath%20d='M16%207v12M10%2013h12'%20stroke='%23c9a24b'%20stroke-width='1'/%3E%3Crect%20x='9'%20y='23'%20width='14'%20height='2.4'%20rx='1'%20fill='%23c9a24b'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Spectral:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<style>
+  :root{
+    --paper:#e7d8b8;
+    --paper-2:#ddcaa3;
+    --paper-3:#f0e6cf;
+    --navy:#162540;
+    --navy-2:#23365a;
+    --navy-soft:#33476d;
+    --burgundy:#5e1f2b;
+    --burgundy-2:#7c2a38;
+    --gold:#a8842f;
+    --gold-2:#cda85a;
+    --gold-deep:#7d5f1f;
+    --ink:#1d1a13;
+    --ink-soft:#473d2c;
+    --ink-faint:#8a7a59;
+    --stamp-red:#a8392c;
+    --stamp-teal:#1c6b66;
+    --stamp-violet:#5b3a82;
+    --green:#2f6b3a;
+    --line:#c4b187;
+    --line-soft:#d4c4a0;
+    --shadow:rgba(22,20,13,.22);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Spectral',Georgia,serif;
+    font-size:19px;line-height:1.62;
+    overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  /* paper grain */
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:1;opacity:.5;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.35'/%3E%3C/svg%3E");
+    mix-blend-mode:multiply;
+  }
+  .mono{font-family:'JetBrains Mono',monospace}
+  .display{font-family:'Marcellus',serif}
+
+  /* ---------- progress + nav ---------- */
+  #progress{position:fixed;top:0;left:0;height:3px;width:0;background:linear-gradient(90deg,var(--gold),var(--gold-2));z-index:60;transition:width .1s linear}
+  nav{
+    position:sticky;top:0;z-index:50;
+    background:var(--navy);
+    border-bottom:2px solid var(--gold-deep);
+    display:flex;align-items:center;justify-content:space-between;
+    padding:.5rem clamp(1rem,4vw,3rem);
+    box-shadow:0 2px 0 rgba(0,0,0,.25);
+  }
+  nav .brand{font-family:'Marcellus',serif;font-size:1.1rem;letter-spacing:.04em;display:flex;align-items:center;gap:.55rem;color:var(--paper-3)}
+  nav .brand .seal{width:22px;height:22px;flex:0 0 auto}
+  nav ul{list-style:none;display:flex;gap:clamp(.4rem,1.6vw,1.4rem);flex-wrap:wrap;justify-content:flex-end}
+  nav a{
+    font-family:'JetBrains Mono',monospace;font-size:.68rem;text-transform:uppercase;
+    letter-spacing:.1em;color:#b9c4d8;text-decoration:none;padding:.3rem .1rem;
+    border-bottom:2px solid transparent;transition:color .2s,border-color .2s;white-space:nowrap;
+  }
+  nav a:hover{color:var(--gold-2)}
+  nav a.active{color:#fff;border-color:var(--gold)}
+
+  /* ---------- layout ---------- */
+  .wrap{max-width:1060px;margin:0 auto;padding:0 clamp(1rem,4vw,2rem);position:relative;z-index:2}
+  section{padding:clamp(3.5rem,8vw,7rem) 0;position:relative;z-index:2}
+  .kicker{
+    font-family:'JetBrains Mono',monospace;font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--burgundy-2);display:inline-flex;align-items:center;gap:.6rem;margin-bottom:1rem;
+  }
+  .kicker::before{content:"";width:26px;height:2px;background:var(--gold)}
+  h2.head{font-family:'Marcellus',serif;font-weight:400;font-size:clamp(2rem,5.6vw,3.5rem);line-height:1.05;letter-spacing:.005em;margin-bottom:1rem;color:var(--navy)}
+  .lede{font-size:clamp(1.05rem,2.4vw,1.28rem);color:var(--ink-soft);max-width:64ch;margin-bottom:2.5rem}
+  .reveal{opacity:1}
+
+  /* divider with microtext + perforation */
+  .divider{height:30px;position:relative;margin:0;overflow:hidden}
+  .divider::before{
+    content:"TRUST · VERIFY · TRUST · VERIFY · TRUST · VERIFY · TRUST · VERIFY · TRUST · VERIFY · TRUST · VERIFY · TRUST · VERIFY · TRUST · VERIFY · ";
+    position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);white-space:nowrap;
+    font-family:'JetBrains Mono',monospace;font-size:.5rem;letter-spacing:.3em;color:var(--line);opacity:.8;
+  }
+
+  /* ---------- hero / passport cover ---------- */
+  #hero{padding-top:clamp(1.5rem,4vw,3rem);text-align:center}
+  .stampline{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:.4rem 0;font-family:'JetBrains Mono',monospace;font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint);flex-wrap:wrap;gap:.5rem}
+
+  .booklet{
+    position:relative;max-width:430px;margin:clamp(1.6rem,5vw,2.8rem) auto 1.4rem;
+    perspective:1600px;
+  }
+  .passport{
+    position:relative;aspect-ratio:5/7;border-radius:10px 16px 16px 10px;
+    background:
+      radial-gradient(120% 80% at 30% 20%, var(--navy-2), var(--navy) 70%);
+    box-shadow:0 24px 50px -18px rgba(0,0,0,.6), inset 0 0 0 2px rgba(201,162,75,.18);
+    color:var(--gold-2);overflow:hidden;cursor:pointer;
+    border-left:6px solid #0e1830;
+  }
+  /* guilloché engine-turning on cover */
+  .passport::before{
+    content:"";position:absolute;inset:0;opacity:.18;mix-blend-mode:screen;pointer-events:none;
+    background-image:
+      repeating-radial-gradient(circle at 50% 38%, transparent 0 6px, rgba(201,162,75,.5) 6px 6.7px),
+      repeating-radial-gradient(circle at 50% 38%, transparent 0 13px, rgba(201,162,75,.3) 13px 13.6px);
+  }
+  .passport .cover-inner{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.8rem;padding:1.4rem;text-align:center;backface-visibility:hidden;transition:opacity .5s,transform .7s;transform-style:preserve-3d}
+  .passport .arms{width:clamp(74px,22vw,104px);height:clamp(74px,22vw,104px)}
+  .cover-country{font-family:'JetBrains Mono',monospace;font-size:.62rem;letter-spacing:.42em;text-transform:uppercase;color:#cdb87a;text-indent:.42em}
+  .cover-title{font-family:'Marcellus',serif;font-size:clamp(1.5rem,5.6vw,2.1rem);letter-spacing:.06em;color:var(--gold-2);text-shadow:0 1px 0 #5d471c,0 2px 1px rgba(0,0,0,.4);line-height:1.15}
+  .cover-rule{width:54px;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
+  .cover-chip{width:42px;height:30px;border-radius:5px;background:linear-gradient(135deg,#d8be78,#a8842f);box-shadow:inset 0 0 0 1px rgba(255,255,255,.25);position:relative}
+  .cover-chip::after{content:"";position:absolute;inset:6px;border:1px solid rgba(60,40,10,.4);border-radius:2px;background:repeating-linear-gradient(90deg,transparent 0 4px,rgba(60,40,10,.35) 4px 5px)}
+  .tap-hint{font-family:'JetBrains Mono',monospace;font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:#9fb0cb;opacity:.85;margin-top:.2rem}
+  .passport.open .cover-inner.front{opacity:0;transform:rotateY(-22deg)}
+  .inside-page{position:absolute;inset:0;background:var(--paper-3);color:var(--ink);opacity:0;transform:translateY(8px);transition:opacity .5s .15s,transform .5s .15s;pointer-events:none;padding:1.3rem 1.2rem;display:flex;flex-direction:column;gap:.55rem;text-align:left}
+  .passport.open .inside-page{opacity:1;transform:none;pointer-events:auto}
+  .inside-page .ip-head{font-family:'JetBrains Mono',monospace;font-size:.56rem;letter-spacing:.18em;text-transform:uppercase;color:var(--burgundy-2);border-bottom:1px solid var(--line);padding-bottom:.35rem;display:flex;justify-content:space-between}
+  .ip-row{display:flex;justify-content:space-between;gap:.6rem;font-size:.82rem}
+  .ip-row .lab{font-family:'JetBrains Mono',monospace;font-size:.58rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint)}
+  .ip-row .val{font-weight:600;text-align:right}
+  .mrz{margin-top:auto;font-family:'JetBrains Mono',monospace;font-size:.62rem;letter-spacing:.04em;color:var(--ink-soft);background:var(--paper-2);border-radius:4px;padding:.4rem .5rem;word-break:break-all;line-height:1.5}
+  .booklet .stamp-fly{position:absolute;z-index:5;pointer-events:none}
+
+  .tldr{
+    max-width:60ch;margin:1.6rem auto 1.4rem;font-family:'Marcellus',serif;font-size:clamp(1.18rem,3vw,1.6rem);
+    line-height:1.4;text-align:center;color:var(--navy);
+  }
+  .tldr b{background:linear-gradient(transparent 58%, rgba(168,132,47,.45) 58%);font-weight:400;padding:0 .12em}
+  .origin{font-style:italic;color:var(--ink-faint);font-size:.98rem;max-width:60ch;margin:0 auto 2rem}
+
+  .btn{
+    font-family:'JetBrains Mono',monospace;font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;font-weight:700;
+    background:var(--burgundy);color:var(--paper-3);border:2px solid var(--navy);padding:.8rem 1.5rem;border-radius:6px;
+    cursor:pointer;box-shadow:3px 3px 0 var(--navy);transition:transform .12s,box-shadow .12s;
+  }
+  .btn:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--navy)}
+  .btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--navy)}
+  .btn.ghost{background:transparent;color:var(--navy);box-shadow:3px 3px 0 var(--line)}
+  .btn.gold{background:var(--gold);color:var(--navy);border-color:var(--gold-deep);box-shadow:3px 3px 0 var(--gold-deep)}
+
+  /* ---------- generic card / panel ---------- */
+  .panel{background:var(--paper-3);border:2px solid var(--navy);border-radius:10px;box-shadow:5px 5px 0 var(--navy);padding:clamp(1.1rem,3vw,1.8rem)}
+  .panel-soft{background:var(--paper-3);border:1px solid var(--line);border-radius:10px;padding:clamp(1.1rem,3vw,1.6rem)}
+
+  /* stamps */
+  .stamp{
+    display:inline-flex;align-items:center;justify-content:center;text-align:center;
+    font-family:'JetBrains Mono',monospace;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+    border:3px double currentColor;border-radius:8px;padding:.5rem .8rem;line-height:1.1;
+    transform:rotate(-7deg);opacity:.92;
+  }
+  .stamp.ok{color:var(--stamp-teal)}
+  .stamp.bad{color:var(--stamp-red)}
+  .stamp.round{border-radius:50%;width:108px;height:108px;flex-direction:column;font-size:.66rem;gap:.15rem}
+  .stamp .big{font-size:1.05rem;letter-spacing:.12em}
+
+  /* ---------- KEYS section ---------- */
+  .keylab{display:grid;grid-template-columns:1fr;gap:1.2rem;margin-top:.5rem}
+  @media(min-width:760px){.keylab{grid-template-columns:1.1fr .9fr}}
+  .keystage{display:flex;flex-direction:column;gap:.9rem}
+  .keypair{display:flex;gap:.8rem;flex-wrap:wrap}
+  .keycard{flex:1 1 150px;border-radius:8px;padding:.9rem 1rem;border:2px solid var(--navy);background:var(--paper-3)}
+  .keycard h4{font-family:'JetBrains Mono',monospace;font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;display:flex;align-items:center;gap:.4rem;margin-bottom:.35rem}
+  .keycard.priv{background:#1c1208;color:#f0d9a0;border-color:#3a2710}
+  .keycard.priv h4{color:#e7b85a}
+  .keycard.pub{background:var(--paper-3)}
+  .keycard small{font-size:.82rem;line-height:1.4;display:block;opacity:.92}
+  .keycard .kval{font-family:'JetBrains Mono',monospace;font-size:.66rem;word-break:break-all;margin-top:.4rem;opacity:.7}
+  .signbox{display:flex;flex-direction:column;gap:.6rem}
+  .signrow{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+  .signrow input{flex:1 1 180px;font-family:'Spectral',serif;font-size:.95rem;padding:.55rem .7rem;border:2px solid var(--navy);border-radius:6px;background:var(--paper-3);color:var(--ink)}
+  .sigout{font-family:'JetBrains Mono',monospace;font-size:.66rem;word-break:break-all;background:var(--navy);color:var(--gold-2);padding:.6rem .7rem;border-radius:6px;min-height:2.4rem;transition:background .3s}
+  .verdict{font-family:'JetBrains Mono',monospace;font-size:.74rem;letter-spacing:.04em;padding:.5rem .7rem;border-radius:6px;display:none}
+  .verdict.show{display:block}
+  .verdict.good{background:rgba(47,107,58,.14);color:var(--green);border:1px solid var(--green)}
+  .verdict.bad{background:rgba(168,57,44,.12);color:var(--stamp-red);border:1px solid var(--stamp-red)}
+
+  /* ---------- ANATOMY ---------- */
+  .anat{display:grid;grid-template-columns:1fr;gap:1.4rem;align-items:start}
+  @media(min-width:820px){.anat{grid-template-columns:1.05fr .95fr}}
+  .docpage{background:var(--paper-3);border:2px solid var(--navy);border-radius:10px;box-shadow:5px 5px 0 var(--navy);padding:1.1rem 1.1rem 1.3rem;position:relative;overflow:hidden}
+  .docpage::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:.06;background-image:repeating-linear-gradient(115deg,var(--navy) 0 1px,transparent 1px 9px)}
+  .doc-top{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid var(--line);padding-bottom:.5rem;margin-bottom:.6rem}
+  .doc-top .t1{font-family:'Marcellus',serif;font-size:1.05rem;color:var(--navy)}
+  .doc-top .t2{font-family:'JetBrains Mono',monospace;font-size:.56rem;letter-spacing:.14em;text-transform:uppercase;color:var(--burgundy-2)}
+  .field{display:block;width:100%;text-align:left;border:1px dashed transparent;border-radius:6px;padding:.4rem .5rem;margin:.15rem 0;cursor:pointer;transition:background .18s,border-color .18s;position:relative;z-index:1;font:inherit;color:inherit;background:transparent}
+  .field:hover{background:rgba(168,132,47,.1);border-color:var(--gold)}
+  .field.active{background:rgba(168,132,47,.2);border-color:var(--gold-deep)}
+  .field .fl{font-family:'JetBrains Mono',monospace;font-size:.56rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);display:block}
+  .field .fv{font-weight:600;font-size:.92rem}
+  .photo-seal{display:flex;justify-content:space-between;align-items:center;gap:.6rem;margin:.3rem 0}
+  .pubphoto{flex:0 0 auto;width:76px;height:88px;border:2px solid var(--navy);border-radius:6px;background:repeating-linear-gradient(135deg,var(--paper-2) 0 6px,var(--paper-3) 6px 12px);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:.5rem;text-align:center;color:var(--ink-faint);line-height:1.3;padding:.3rem}
+  .anat-info{position:sticky;top:80px}
+  .anat-info .term{font-family:'Marcellus',serif;font-size:1.5rem;color:var(--navy);margin-bottom:.2rem}
+  .anat-info .field-name{font-family:'JetBrains Mono',monospace;font-size:.66rem;letter-spacing:.08em;color:var(--burgundy-2);text-transform:uppercase;margin-bottom:.7rem}
+  .anat-info p{margin-bottom:.7rem}
+
+  /* ---------- HIERARCHY ---------- */
+  .tiers{display:flex;flex-direction:column;gap:.5rem;align-items:center;margin-top:.5rem}
+  .tier{width:100%;max-width:560px;border:2px solid var(--navy);border-radius:10px;background:var(--paper-3);padding:.9rem 1.1rem;cursor:pointer;transition:transform .15s,box-shadow .15s,background .2s;position:relative}
+  .tier:hover{transform:translateX(2px)}
+  .tier.active{background:var(--navy);color:var(--paper-3);box-shadow:4px 4px 0 var(--gold)}
+  .tier.active .tlab{color:var(--gold-2)}
+  .tier.active .tsub{color:#c4d0e4}
+  .tier-head{display:flex;align-items:center;gap:.7rem}
+  .tier .ic{width:34px;height:34px;flex:0 0 auto}
+  .tlab{font-family:'Marcellus',serif;font-size:1.15rem;color:var(--navy)}
+  .tsub{font-family:'JetBrains Mono',monospace;font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint)}
+  .tier-arrow{font-family:'JetBrains Mono',monospace;font-size:.62rem;letter-spacing:.14em;color:var(--burgundy-2);text-align:center}
+  .tier-info{max-width:560px;margin:1rem auto 0}
+
+  /* ---------- CHAIN / BORDER (centerpiece) ---------- */
+  .border-scene{display:grid;grid-template-columns:1fr;gap:1.3rem}
+  @media(min-width:880px){.border-scene{grid-template-columns:1fr 1fr}}
+  .scenario-bar{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1rem}
+  .scn{font-family:'JetBrains Mono',monospace;font-size:.66rem;letter-spacing:.05em;text-transform:uppercase;padding:.5rem .7rem;border:2px solid var(--navy);border-radius:20px;background:var(--paper-3);cursor:pointer;color:var(--navy);transition:background .15s,color .15s}
+  .scn.active{background:var(--navy);color:var(--gold-2)}
+  .chainstack{display:flex;flex-direction:column;gap:.7rem}
+  .clink{border:2px solid var(--navy);border-radius:9px;background:var(--paper-3);padding:.75rem .9rem;position:relative;transition:opacity .3s,border-color .3s,background .3s,transform .3s}
+  .clink .crole{font-family:'JetBrains Mono',monospace;font-size:.56rem;letter-spacing:.12em;text-transform:uppercase;color:var(--burgundy-2)}
+  .clink .cname{font-family:'Marcellus',serif;font-size:1.02rem;color:var(--navy)}
+  .clink .cmeta{font-family:'JetBrains Mono',monospace;font-size:.62rem;color:var(--ink-faint);margin-top:.15rem}
+  .clink .status{position:absolute;right:.7rem;top:.7rem;font-family:'JetBrains Mono',monospace;font-size:.62rem;font-weight:700;opacity:0;transition:opacity .3s}
+  .clink.checking{border-color:var(--gold-deep);background:rgba(168,132,47,.12)}
+  .clink.pass{border-color:var(--green);background:rgba(47,107,58,.1)}
+  .clink.pass .status{opacity:1;color:var(--green)}
+  .clink.fail{border-color:var(--stamp-red);background:rgba(168,57,44,.1)}
+  .clink.fail .status{opacity:1;color:var(--stamp-red)}
+  .clink.removed{opacity:.25;border-style:dashed;filter:grayscale(.7)}
+  .vault-tag{display:inline-flex;align-items:center;gap:.35rem;font-family:'JetBrains Mono',monospace;font-size:.54rem;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-deep);border:1px solid var(--gold-deep);border-radius:20px;padding:.1rem .4rem;margin-top:.3rem}
+  .link-conn{text-align:center;font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--ink-faint);letter-spacing:.1em}
+  .inspector{display:flex;flex-direction:column;gap:.8rem}
+  .insp-log{min-height:170px;background:var(--navy);border-radius:9px;padding:.9rem 1rem;font-family:'JetBrains Mono',monospace;font-size:.74rem;color:#cdd6e6;line-height:1.6;display:flex;flex-direction:column;gap:.45rem;overflow:hidden}
+  .logline{opacity:0;transform:translateX(-8px);transition:opacity .3s,transform .3s;display:flex;gap:.5rem;align-items:flex-start}
+  .logline.show{opacity:1;transform:none}
+  .logline .li{flex:0 0 auto}
+  .logline.good .li{color:#7fd69a}
+  .logline.bad{color:#f3a89e}
+  .logline.bad .li{color:#f3a89e}
+  .logline.step .li{color:var(--gold-2)}
+  .verdict-stamp{display:flex;justify-content:center;align-items:center;min-height:120px}
+  .err-aside{font-family:'JetBrains Mono',monospace;font-size:.66rem;background:rgba(168,57,44,.1);border:1px solid var(--stamp-red);color:var(--burgundy);border-radius:6px;padding:.55rem .7rem;display:none}
+  .err-aside.show{display:block}
+
+  /* ---------- CSR steps ---------- */
+  .csr-flow{display:grid;grid-template-columns:1fr;gap:.7rem;counter-reset:step}
+  @media(min-width:760px){.csr-flow{grid-template-columns:repeat(4,1fr)}}
+  .csr-step{border:2px solid var(--navy);border-radius:10px;background:var(--paper-3);padding:1rem .9rem;position:relative}
+  .csr-step .num{position:absolute;top:-14px;left:14px;width:28px;height:28px;border-radius:50%;background:var(--burgundy);color:var(--paper-3);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:.8rem;border:2px solid var(--navy)}
+  .csr-step h4{font-family:'Marcellus',serif;font-size:1.02rem;color:var(--navy);margin:.4rem 0 .35rem}
+  .csr-step p{font-size:.86rem;color:var(--ink-soft);line-height:1.45}
+  .csr-step .tag{display:inline-block;margin-top:.5rem;font-family:'JetBrains Mono',monospace;font-size:.54rem;letter-spacing:.06em;text-transform:uppercase;padding:.15rem .4rem;border-radius:4px}
+  .tag.keep{background:#1c1208;color:#e7b85a}
+  .tag.send{background:rgba(28,107,102,.16);color:var(--stamp-teal)}
+  .tag.get{background:rgba(47,107,58,.14);color:var(--green)}
+
+  /* ---------- KEYSTORE vs TRUSTSTORE ---------- */
+  .kt-intro{display:grid;grid-template-columns:1fr;gap:1rem;margin-bottom:2rem}
+  @media(min-width:760px){.kt-intro{grid-template-columns:1fr 1fr}}
+  .kt-def{border:2px solid var(--navy);border-radius:10px;padding:1.1rem 1.2rem;background:var(--paper-3)}
+  .kt-def.keystore{box-shadow:5px 5px 0 var(--burgundy)}
+  .kt-def.truststore{box-shadow:5px 5px 0 var(--stamp-teal)}
+  .kt-def .kt-icon{font-size:1.7rem}
+  .kt-def h3{font-family:'Marcellus',serif;font-size:1.35rem;color:var(--navy);margin:.3rem 0 .1rem}
+  .kt-def .q{font-family:'JetBrains Mono',monospace;font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;margin-bottom:.6rem}
+  .kt-def.keystore .q{color:var(--burgundy-2)}
+  .kt-def.truststore .q{color:var(--stamp-teal)}
+
+  .sorter{margin-top:.5rem}
+  .sorter-pool{display:flex;flex-wrap:wrap;gap:.6rem;justify-content:center;min-height:30px;margin-bottom:1.2rem}
+  .item{border:2px solid var(--navy);border-radius:8px;background:var(--paper-3);padding:.55rem .7rem;font-size:.84rem;display:flex;flex-direction:column;gap:.45rem;max-width:230px;box-shadow:2px 2px 0 var(--navy)}
+  .item.placed{box-shadow:none}
+  .item .iname{font-weight:600;display:flex;align-items:center;gap:.4rem}
+  .item .ibtns{display:flex;gap:.35rem}
+  .item .ib{flex:1;font-family:'JetBrains Mono',monospace;font-size:.56rem;letter-spacing:.04em;text-transform:uppercase;border:1.5px solid var(--navy);background:transparent;border-radius:5px;padding:.3rem;cursor:pointer;color:var(--navy);transition:background .15s}
+  .item .ib:hover{background:var(--navy);color:var(--paper-3)}
+  .item.correct{border-color:var(--green);background:rgba(47,107,58,.1)}
+  .item.correct .ibtns{display:none}
+  .item .why{font-size:.66rem;color:var(--green);font-family:'JetBrains Mono',monospace;display:none}
+  .item.correct .why{display:block}
+  .bins{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+  .bin{border:2px dashed var(--navy);border-radius:10px;padding:.8rem;min-height:120px}
+  .bin.keystore{border-color:var(--burgundy)}
+  .bin.truststore{border-color:var(--stamp-teal)}
+  .bin h4{font-family:'JetBrains Mono',monospace;font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;margin-bottom:.6rem;text-align:center}
+  .bin.keystore h4{color:var(--burgundy-2)}
+  .bin.truststore h4{color:var(--stamp-teal)}
+  .bin .drop{display:flex;flex-direction:column;gap:.5rem;align-items:center}
+  .kt-done{margin-top:1.4rem;padding:1.1rem 1.2rem;border-radius:10px;background:var(--navy);color:var(--paper-3);display:none}
+  .kt-done.show{display:block}
+  .kt-done b{color:var(--gold-2)}
+
+  /* ---------- handshake ---------- */
+  .cross{display:flex;flex-direction:column;gap:.55rem;max-width:680px}
+  .cross .cstep{display:flex;gap:.8rem;align-items:flex-start;border-left:3px solid var(--gold);padding:.4rem 0 .4rem .9rem}
+  .cross .cstep .cn{font-family:'JetBrains Mono',monospace;font-size:.66rem;color:var(--burgundy-2);flex:0 0 auto;margin-top:.2rem}
+  .cross .cstep b{font-family:'Marcellus',serif;font-weight:400;color:var(--navy)}
+
+  /* ---------- reality tiles ---------- */
+  .tiles{display:grid;grid-template-columns:1fr;gap:.9rem}
+  @media(min-width:680px){.tiles{grid-template-columns:1fr 1fr}}
+  .tile{border:2px solid var(--navy);border-radius:10px;background:var(--paper-3);padding:1.1rem 1.2rem;box-shadow:4px 4px 0 var(--navy)}
+  .tile h4{font-family:'Marcellus',serif;font-size:1.12rem;color:var(--navy);display:flex;align-items:center;gap:.5rem;margin-bottom:.35rem}
+  .tile .badge{font-family:'JetBrains Mono',monospace;font-size:.54rem;letter-spacing:.06em;text-transform:uppercase;background:rgba(168,57,44,.14);color:var(--stamp-red);padding:.15rem .4rem;border-radius:4px;margin-left:auto}
+  .tile p{font-size:.88rem;color:var(--ink-soft);line-height:1.45}
+  .tile .real{font-family:'JetBrains Mono',monospace;font-size:.66rem;color:var(--ink-faint);margin-top:.5rem;display:block}
+
+  /* practical asides */
+  details.aside{margin-top:1rem;border:1px solid var(--line);border-radius:8px;background:rgba(168,132,47,.07);padding:.4rem .9rem}
+  details.aside summary{cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:.7rem;letter-spacing:.04em;color:var(--burgundy-2);padding:.4rem 0;list-style:none}
+  details.aside summary::-webkit-details-marker{display:none}
+  details.aside summary::before{content:"▸ ";color:var(--gold-deep)}
+  details.aside[open] summary::before{content:"▾ "}
+  details.aside p{font-size:.86rem;padding:.2rem 0 .7rem;color:var(--ink-soft)}
+  details.aside code{font-family:'JetBrains Mono',monospace;font-size:.8em;background:var(--navy);color:var(--gold-2);padding:.08em .35em;border-radius:4px}
+
+  /* recap */
+  #recap{background:var(--navy);color:var(--paper-3)}
+  #recap .head{color:var(--paper-3)}
+  #recap .kicker{color:var(--gold-2)}
+  #recap .kicker::before{background:var(--gold)}
+  .recap-line{font-family:'Marcellus',serif;font-size:clamp(1.3rem,3.4vw,2rem);line-height:1.4;max-width:30ch;margin:0 auto 2rem;text-align:center}
+  .recap-line b{color:var(--gold-2);font-weight:400}
+  .checklist{list-style:none;max-width:680px;margin:0 auto;display:flex;flex-direction:column;gap:.7rem}
+  .checklist li{display:flex;gap:.7rem;align-items:flex-start;font-size:1rem;color:#dfe6f1}
+  .checklist li::before{content:"✓";color:var(--gold-2);font-weight:700;flex:0 0 auto;font-family:'JetBrains Mono',monospace}
+  footer{text-align:center;font-family:'JetBrains Mono',monospace;font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:#8a98b3;margin-top:3rem;border-top:1px solid var(--navy-soft);padding-top:1.4rem}
+
+  ::selection{background:var(--gold);color:var(--navy)}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+
+<nav>
+  <span class="brand"><svg class="seal" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="none" stroke="#c9a24b" stroke-width="1.4"/><circle cx="16" cy="16" r="10" fill="none" stroke="#c9a24b" stroke-width=".8"/><path d="M16 8v16M8 16h16" stroke="#c9a24b" stroke-width=".8"/><circle cx="16" cy="16" r="3" fill="#c9a24b"/></svg>Bureau of Trust</span>
+  <ul>
+    <li><a href="#hero">Cover</a></li>
+    <li><a href="#keys">Keys</a></li>
+    <li><a href="#anatomy">Anatomy</a></li>
+    <li><a href="#tiers">Hierarchy</a></li>
+    <li><a href="#chain">The Border</a></li>
+    <li><a href="#csr">Apply</a></li>
+    <li><a href="#stores">Stores</a></li>
+    <li><a href="#reality">Gotchas</a></li>
+  </ul>
+</nav>
+
+<!-- ============ HERO ============ -->
+<section id="hero">
+  <div class="wrap">
+    <div class="stampline">
+      <span>Form X.509 · Rev X</span>
+      <span>Dept. of Digital Identity</span>
+      <span>No. 0001-TLS</span>
+    </div>
+
+    <div class="booklet">
+      <div class="passport" id="passport" role="button" tabindex="0" aria-label="Open the passport">
+        <div class="cover-inner front">
+          <div class="cover-country">Internet · Republic of</div>
+          <svg class="arms" viewBox="0 0 100 100" aria-hidden="true">
+            <circle cx="50" cy="46" r="30" fill="none" stroke="#cda85a" stroke-width="1.6"/>
+            <circle cx="50" cy="46" r="22" fill="none" stroke="#cda85a" stroke-width="1"/>
+            <path d="M50 22v48M28 46h44" stroke="#cda85a" stroke-width="1"/>
+            <path d="M50 30l5 8h-10z M50 62l5-8h-10z M34 46l8-5v10z M66 46l-8 5v-10z" fill="#cda85a"/>
+            <circle cx="50" cy="46" r="5" fill="#cda85a"/>
+            <path d="M30 82h40" stroke="#cda85a" stroke-width="2"/>
+          </svg>
+          <div class="cover-title">PASSPORT</div>
+          <div class="cover-rule"></div>
+          <div class="cover-chip" aria-hidden="true"></div>
+          <div class="tap-hint">▸ Tap to open</div>
+        </div>
+        <div class="inside-page" id="insidePage">
+          <div class="ip-head"><span>Identity Page</span><span>X.509</span></div>
+          <div class="photo-seal">
+            <div class="pubphoto">PUBLIC KEY<br>(your "photo")</div>
+            <div style="flex:1">
+              <div class="ip-row"><span class="lab">Holder (Subject)</span><span class="val">api.example.com</span></div>
+              <div class="ip-row"><span class="lab">Issued by</span><span class="val">TrustWorks CA G2</span></div>
+              <div class="ip-row"><span class="lab">Valid from</span><span class="val">2026-01-04</span></div>
+              <div class="ip-row"><span class="lab">Valid until</span><span class="val">2026-04-04</span></div>
+            </div>
+          </div>
+          <div class="mrz">P&lt;NET·API.EXAMPLE.COM&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br>SN0F4A9C2&lt;7TRUSTWORKS&lt;&lt;CA&lt;G2&lt;&lt;&lt;&lt;&lt;&lt;</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="tldr">A certificate is just a <b>passport for a machine</b>: it says who you are, and it's signed by an authority that others already trust.</p>
+    <p class="origin">Every confusing word on the list — leaf, intermediate, root, chain, keystore, truststore — is one small part of border control. We'll walk through the whole checkpoint, one stamp at a time.</p>
+    <a class="btn gold" href="#keys">Begin the briefing ▸</a>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ============ KEYS ============ -->
+<section id="keys">
+  <div class="wrap">
+    <span class="kicker reveal">Before Any Passport — The Signature</span>
+    <h2 class="head reveal">The one thing only you can do</h2>
+    <p class="lede reveal">A passport is worthless if anyone could forge your signature. So identity online starts with a pair of keys: a <b>private key</b> you never, ever hand over, and a <b>public key</b> you print for the world. Anything signed by the private key can be checked by the public key — but never reproduced from it.</p>
+
+    <div class="keylab reveal">
+      <div class="keystage panel">
+        <div class="keypair">
+          <div class="keycard priv">
+            <h4>🔒 Private key</h4>
+            <small>Stays locked in your pocket. Used to <em>sign</em>. Lose control of this and someone can impersonate you.</small>
+            <div class="kval">••••••••••••••••••••••••••</div>
+          </div>
+          <div class="keycard pub">
+            <h4>🔓 Public key</h4>
+            <small>Printed in your passport for anyone. Used to <em>verify</em> a signature — never to create one.</small>
+            <div class="kval" id="pubval">3A:9F:C2:1D:7E:B4:08:…</div>
+          </div>
+        </div>
+        <div class="signbox">
+          <div class="signrow">
+            <input id="signInput" type="text" value="I am api.example.com" aria-label="Message to sign">
+            <button class="btn" id="signBtn">Sign with private key</button>
+          </div>
+          <div class="sigout" id="sigOut">— signature appears here —</div>
+          <div class="signrow">
+            <button class="btn ghost" id="verifyBtn">Verify with public key</button>
+            <button class="btn ghost" id="forgeBtn">Try to forge it</button>
+          </div>
+          <div class="verdict" id="keyVerdict"></div>
+        </div>
+      </div>
+      <div class="panel-soft reveal">
+        <p style="margin-bottom:.7rem"><b>Why this matters for everything below:</b> the private key is the root of your identity. A certificate doesn't <em>contain</em> it — a certificate is your public key plus your name, wrapped up and signed by an authority.</p>
+        <p>So when people say "install the certificate," there are really two halves: the public certificate (shareable) and the private key (secret). Mixing those up is the first place things go wrong.</p>
+        <details class="aside">
+          <summary>At the terminal</summary>
+          <p>A keypair and a self-signed pair in one line: <code>openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -days 90</code>. The <code>key.pem</code> is the secret half; <code>cert.pem</code> is the shareable half.</p>
+        </details>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ============ ANATOMY ============ -->
+<section id="anatomy">
+  <div class="wrap">
+    <span class="kicker reveal">What's On The Page</span>
+    <h2 class="head reveal">Anatomy of one certificate</h2>
+    <p class="lede reveal">Open any passport and the same fields appear. A certificate is identical — just machine-readable. Tap a field to see what it's really called and why it's there.</p>
+
+    <div class="anat reveal">
+      <div class="docpage">
+        <div class="doc-top">
+          <div><div class="t1">Certificate</div><div class="t2">Version 3 · X.509</div></div>
+          <div class="t2" style="text-align:right">Serial<br>0F:4A:9C:2B</div>
+        </div>
+        <div class="photo-seal">
+          <button class="field" data-f="pub" style="flex:0 0 auto;padding:0">
+            <span class="pubphoto">PUBLIC KEY<br>RSA 2048<br>(the "photo")</span>
+          </button>
+          <div style="flex:1">
+            <button class="field" data-f="subject"><span class="fl">Holder</span><span class="fv">CN = api.example.com</span></button>
+            <button class="field" data-f="san"><span class="fl">Also valid for</span><span class="fv">api.example.com, www.example.com</span></button>
+          </div>
+        </div>
+        <button class="field" data-f="issuer"><span class="fl">Issued by</span><span class="fv">CN = TrustWorks CA G2</span></button>
+        <button class="field" data-f="validity"><span class="fl">Validity window</span><span class="fv">2026-01-04 → 2026-04-04</span></button>
+        <button class="field" data-f="sig"><span class="fl">Authority's signature</span><span class="fv">SHA-256-RSA · 9c:2b:7e:f0:…</span></button>
+      </div>
+
+      <div class="anat-info panel" id="anatInfo">
+        <div class="term">Tap a field →</div>
+        <div class="field-name">the certificate, decoded</div>
+        <p>Each part of a passport has an exact twin in a certificate. Start with the <b>Holder</b> — the equivalent of the name on your passport.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ============ HIERARCHY ============ -->
+<section id="tiers">
+  <div class="wrap">
+    <span class="kicker reveal">Who Vouches For Whom</span>
+    <h2 class="head reveal">Root, Intermediate, Leaf</h2>
+    <p class="lede reveal">Authority comes in tiers, exactly like a government. The top almost never signs anything directly — it delegates. Tap each tier to meet it.</p>
+
+    <div class="tiers reveal" id="tierStack">
+      <div class="tier" data-t="root">
+        <div class="tier-head">
+          <svg class="ic" viewBox="0 0 32 32"><rect x="5" y="10" width="22" height="17" rx="2" fill="none" stroke="#162540" stroke-width="2"/><path d="M10 10V8a6 6 0 0112 0v2" fill="none" stroke="#162540" stroke-width="2"/><circle cx="16" cy="18" r="2.4" fill="#162540"/></svg>
+          <div><div class="tlab">Root certificate</div><div class="tsub">The national authority · in the vault</div></div>
+        </div>
+      </div>
+      <div class="tier-arrow">▲ signs ▲</div>
+      <div class="tier" data-t="inter">
+        <div class="tier-head">
+          <svg class="ic" viewBox="0 0 32 32"><rect x="6" y="6" width="20" height="20" rx="2" fill="none" stroke="#162540" stroke-width="2"/><path d="M11 13h10M11 17h10M11 21h6" stroke="#162540" stroke-width="2"/></svg>
+          <div><div class="tlab">Intermediate certificate</div><div class="tsub">The regional passport office</div></div>
+        </div>
+      </div>
+      <div class="tier-arrow">▲ signs ▲</div>
+      <div class="tier" data-t="leaf">
+        <div class="tier-head">
+          <svg class="ic" viewBox="0 0 32 32"><rect x="7" y="5" width="18" height="22" rx="2" fill="none" stroke="#162540" stroke-width="2"/><circle cx="16" cy="13" r="3.4" fill="none" stroke="#162540" stroke-width="2"/><path d="M11 22c1-3 3-4 5-4s4 1 5 4" fill="none" stroke="#162540" stroke-width="2"/></svg>
+          <div><div class="tlab">Leaf certificate</div><div class="tsub">Your actual passport · the end-entity</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tier-info panel reveal" id="tierInfo">
+      <p><b>Why three tiers?</b> So the most precious key — the root's — can stay offline in a vault and sign almost nothing. Day-to-day passports are issued by intermediates. If an intermediate is ever compromised, you revoke just that office, not the whole country.</p>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ============ CHAIN / BORDER (centerpiece) ============ -->
+<section id="chain">
+  <div class="wrap">
+    <span class="kicker reveal">The Checkpoint</span>
+    <h2 class="head reveal">The chain of trust, at the border</h2>
+    <p class="lede reveal">This is the heart of the whole thing. When your machine connects to a server, it's a traveller presenting a passport to a border guard. The guard doesn't know the traveller — but follows the chain of who-vouches-for-whom until it reaches an authority it already trusts. Pick a scenario, then run the inspection.</p>
+
+    <div class="scenario-bar reveal" id="scenarioBar">
+      <button class="scn active" data-s="valid">✓ Valid chain</button>
+      <button class="scn" data-s="nointer">✗ Missing intermediate</button>
+      <button class="scn" data-s="expired">✗ Expired passport</button>
+      <button class="scn" data-s="selfsigned">✗ Self-signed</button>
+    </div>
+
+    <div class="border-scene reveal">
+      <div class="chainstack" id="chainStack">
+        <div class="clink" data-link="leaf">
+          <div class="crole">Leaf · presented by the traveller</div>
+          <div class="cname" id="leafName">api.example.com</div>
+          <div class="cmeta" id="leafMeta">issued by TrustWorks CA G2 · valid 2026-01-04→04-04</div>
+          <div class="status" id="st-leaf">✓ OK</div>
+        </div>
+        <div class="link-conn">▲ "who vouches for me?" ▲</div>
+        <div class="clink" data-link="inter">
+          <div class="crole">Intermediate · the regional office</div>
+          <div class="cname">TrustWorks CA G2</div>
+          <div class="cmeta">issued by TrustWorks Root CA</div>
+          <div class="status" id="st-inter">✓ OK</div>
+        </div>
+        <div class="link-conn">▲ "and who vouches for you?" ▲</div>
+        <div class="clink" data-link="root">
+          <div class="crole">Root · the national authority</div>
+          <div class="cname">TrustWorks Root CA</div>
+          <div class="cmeta">self-signed · the buck stops here</div>
+          <div class="vault-tag" id="vaultTag">★ already in your trust store</div>
+          <div class="status" id="st-root">✓ TRUSTED</div>
+        </div>
+      </div>
+
+      <div class="inspector">
+        <div class="panel" style="padding:1rem">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.7rem;flex-wrap:wrap;gap:.5rem">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--burgundy-2)">Border guard · inspection log</span>
+            <button class="btn" id="inspectBtn">Present passport ▸</button>
+          </div>
+          <div class="insp-log" id="inspLog">
+            <div class="logline show"><span class="li">▸</span><span>Awaiting traveller. Choose a scenario and present the passport.</span></div>
+          </div>
+        </div>
+        <div class="verdict-stamp" id="verdictStamp"></div>
+        <div class="err-aside" id="errAside"></div>
+      </div>
+    </div>
+
+    <details class="aside reveal">
+      <summary>In the real world — the #1 production bug</summary>
+      <p>"Missing intermediate" is the classic. The server must <em>send</em> its intermediate(s) alongside the leaf, because clients usually only ship roots. Forget it and some clients still work (browsers cache intermediates or fetch them via the cert's AIA URL) while others — <code>curl</code>, Java, older clients — fail with <code>unable to get local issuer certificate</code>. The infamous "works in my browser, breaks in prod." Diagnose with <code>openssl s_client -connect host:443 -showcerts</code> to see exactly what the server sends.</p>
+    </details>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ============ CSR ============ -->
+<section id="csr">
+  <div class="wrap">
+    <span class="kicker reveal">Getting Your Passport</span>
+    <h2 class="head reveal">Applying for a certificate (the CSR)</h2>
+    <p class="lede reveal">You don't print your own passport — you apply. The application is called a <b>Certificate Signing Request</b>, and the golden rule is right there in the steps: your private key never leaves your hands.</p>
+
+    <div class="csr-flow reveal">
+      <div class="csr-step">
+        <div class="num">1</div>
+        <h4>Make your keys</h4>
+        <p>Generate a private + public key pair on your own server. The private half stays here, forever.</p>
+        <span class="tag keep">private key — keep</span>
+      </div>
+      <div class="csr-step">
+        <div class="num">2</div>
+        <h4>Fill the application</h4>
+        <p>Bundle your <em>public</em> key with your identity (your domain). That bundle is the CSR — a passport application with your photo attached.</p>
+        <span class="tag send">CSR — send to CA</span>
+      </div>
+      <div class="csr-step">
+        <div class="num">3</div>
+        <h4>Authority verifies</h4>
+        <p>The CA checks you really control that domain, then signs your public key with <em>its</em> key — an unforgeable seal of approval.</p>
+        <span class="tag send">proof of control</span>
+      </div>
+      <div class="csr-step">
+        <div class="num">4</div>
+        <h4>Receive the passport</h4>
+        <p>Back comes your signed certificate (the leaf), plus the intermediate to present with it. Install both with your private key.</p>
+        <span class="tag get">certificate — issued</span>
+      </div>
+    </div>
+
+    <details class="aside reveal">
+      <summary>At the terminal</summary>
+      <p>Create a request: <code>openssl req -new -newkey rsa:2048 -keyout key.pem -out request.csr</code>. You hand over <code>request.csr</code> only. Notice the private <code>key.pem</code> is never uploaded — that's the entire security model in one detail.</p>
+    </details>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ============ KEYSTORE vs TRUSTSTORE ============ -->
+<section id="stores">
+  <div class="wrap">
+    <span class="kicker reveal">The Great Confusion, Settled</span>
+    <h2 class="head reveal">Keystore vs Truststore</h2>
+    <p class="lede reveal">Almost everyone who's lost an afternoon to certificates lost it right here. Two boxes, two completely different jobs. Once you see them as <em>your wallet</em> vs <em>the guard's recognition list</em>, the confusion evaporates.</p>
+
+    <div class="kt-intro reveal">
+      <div class="kt-def keystore">
+        <div class="kt-icon">🎒</div>
+        <h3>Keystore</h3>
+        <div class="q">Who am I? What do I present?</div>
+        <p style="font-size:.92rem;color:var(--ink-soft)">Your wallet. Holds <b>your own private key</b> and <b>your own certificate</b> (with its chain). This is the identity you show others. It's secret — password-protected.</p>
+      </div>
+      <div class="kt-def truststore">
+        <div class="kt-icon">📋</div>
+        <h3>Truststore</h3>
+        <div class="q">Whom do I believe?</div>
+        <p style="font-size:.92rem;color:var(--ink-soft)">The guard's recognition list. Holds the <b>root (CA) certificates</b> you're willing to trust. No secrets here — just the authorities whose signatures you'll accept.</p>
+      </div>
+    </div>
+
+    <div class="sorter panel reveal">
+      <p style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:.74rem;letter-spacing:.04em;color:var(--burgundy-2);margin-bottom:1rem">SORT EACH ITEM INTO THE RIGHT BOX</p>
+      <div class="sorter-pool" id="pool"></div>
+      <div class="bins">
+        <div class="bin keystore"><h4>🎒 Keystore — who I am</h4><div class="drop" id="dropKey"></div></div>
+        <div class="bin truststore"><h4>📋 Truststore — who I trust</h4><div class="drop" id="dropTrust"></div></div>
+      </div>
+      <div class="kt-done" id="ktDone">
+        <p><b>That's the whole rule.</b> Your secrets and your own identity go in the <b>keystore</b>. The authorities you're willing to believe go in the <b>truststore</b>. A web server mostly needs a keystore (to present its cert); a client mostly needs a truststore (to verify the server).</p>
+        <p style="margin-top:.6rem">And when a <em>client</em> also carries a keystore — so it can present its own certificate back — that's <b>mutual TLS</b>: both sides show passports.</p>
+      </div>
+    </div>
+
+    <details class="aside reveal">
+      <summary>In the real world — Java, files, and formats</summary>
+      <p>Java exposes these as <code>javax.net.ssl.keyStore</code> (your identity) and <code>javax.net.ssl.trustStore</code> (whom you trust); the default truststore is the JDK's <code>cacerts</code> file of bundled roots. Formats: <code>.p12</code>/<code>.pfx</code> (PKCS#12, the modern cross-platform bundle of cert + key + chain), <code>.jks</code> (legacy Java-only — Java now defaults to PKCS#12), <code>.pem</code> (Base64 text), <code>.key</code> (private key), <code>.crt</code> (a certificate). Inspect with <code>keytool -list -keystore store.p12</code>.</p>
+    </details>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ============ HANDSHAKE ============ -->
+<section id="cross">
+  <div class="wrap">
+    <span class="kicker reveal">Putting It Together</span>
+    <h2 class="head reveal">The crossing, end to end</h2>
+    <p class="lede reveal">Every HTTPS connection runs this checkpoint in milliseconds. Here's the whole sequence in plain terms.</p>
+    <div class="cross reveal">
+      <div class="cstep"><span class="cn">01</span><div><b>Traveller approaches.</b> Your browser opens a connection to the server and says hello.</div></div>
+      <div class="cstep"><span class="cn">02</span><div><b>Passport presented.</b> The server sends its leaf certificate — and the intermediate(s) with it.</div></div>
+      <div class="cstep"><span class="cn">03</span><div><b>Guard follows the chain.</b> Browser checks leaf←intermediate←root, validity dates, and that the name on the passport matches the site it asked for.</div></div>
+      <div class="cstep"><span class="cn">04</span><div><b>Anchor in the trust store.</b> The chain ends at a root the browser already trusts. If not — the scary warning page.</div></div>
+      <div class="cstep"><span class="cn">05</span><div><b>Admitted.</b> A shared secret is agreed using the keys, and everything after is encrypted. The padlock appears.</div></div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ============ REALITY ============ -->
+<section id="reality">
+  <div class="wrap">
+    <span class="kicker reveal">Reality Check</span>
+    <h2 class="head reveal">Why the padlock breaks</h2>
+    <p class="lede reveal">The honest column. Almost every certificate error you'll ever meet is one of these five.</p>
+    <div class="tiles reveal" id="realityTiles"></div>
+  </div>
+</section>
+
+<!-- ============ RECAP ============ -->
+<section id="recap">
+  <div class="wrap">
+    <span class="kicker reveal" style="justify-content:center">The Last Stamp</span>
+    <p class="recap-line reveal">If you remember one thing: a certificate is a <b>passport</b>, and the chain of trust is just <b>following who vouches for whom</b> until you reach an authority you already trust.</p>
+    <ul class="checklist reveal">
+      <li>A certificate = your public key + your identity, signed by an authority. The private key stays secret and separate.</li>
+      <li>Leaf is your passport, intermediate is the issuing office, root is the top authority — kept offline.</li>
+      <li>The chain of trust climbs leaf → intermediate → root; verification only succeeds if it ends at a trusted root.</li>
+      <li>Keystore = who I am (my key + cert). Truststore = who I trust (the roots). Don't mix them.</li>
+      <li>Servers present a keystore; clients verify with a truststore; when both present, it's mutual TLS.</li>
+      <li>Most failures: expired, name mismatch, self-signed, untrusted root, or a missing intermediate.</li>
+    </ul>
+    <footer>The Bureau of Trust · An interactive explainer · Built to be tweaked</footer>
+  </div>
+</section>
+
+<script>
+(function(){
+  "use strict";
+  var hasGSAP = typeof gsap !== "undefined";
+  if (hasGSAP && gsap.registerPlugin) { try { gsap.registerPlugin(ScrollTrigger); } catch(e){} }
+
+  /* ---------- progress + active nav ---------- */
+  var progress = document.getElementById("progress");
+  var navLinks = Array.prototype.slice.call(document.querySelectorAll("nav a"));
+  var sections = navLinks.map(function(a){ return document.querySelector(a.getAttribute("href")); });
+  function onScroll(){
+    var h = document.documentElement;
+    var sc = h.scrollTop || document.body.scrollTop;
+    var max = h.scrollHeight - h.clientHeight;
+    progress.style.width = (max>0 ? (sc/max*100) : 0) + "%";
+    var idx = 0;
+    for (var i=0;i<sections.length;i++){
+      if (sections[i] && sections[i].offsetTop - 120 <= sc) idx = i;
+    }
+    navLinks.forEach(function(a,i){ a.classList.toggle("active", i===idx); });
+  }
+  window.addEventListener("scroll", onScroll, {passive:true});
+  onScroll();
+
+  /* ---------- reveal ---------- */
+  if (hasGSAP){
+    document.querySelectorAll(".reveal").forEach(function(el){
+      gsap.fromTo(el, {y:24, opacity:0}, {
+        y:0, opacity:1, duration:.7, ease:"power2.out",
+        scrollTrigger:{ trigger:el, start:"top 86%" }
+      });
+    });
+  }
+
+  /* ---------- HERO passport open + stamps ---------- */
+  var passport = document.getElementById("passport");
+  function toggleOpen(){ passport.classList.toggle("open"); if(passport.classList.contains("open")) stampBooklet(); }
+  passport.addEventListener("click", toggleOpen);
+  passport.addEventListener("keydown", function(e){ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); toggleOpen(); }});
+
+  function makeStamp(text, cls){
+    var s = document.createElement("div");
+    s.className = "stamp round " + cls + " stamp-fly";
+    s.innerHTML = '<span class="big">'+text+'</span><span>BUREAU OF TRUST</span><span>'+(new Date().getFullYear())+'</span>';
+    return s;
+  }
+  var stampedOnce = false;
+  function stampBooklet(){
+    if (stampedOnce) return; stampedOnce = true;
+    var bk = document.querySelector(".booklet");
+    var s = makeStamp("ADMITTED","ok");
+    s.style.left = "6%"; s.style.bottom = "10%"; s.style.color = "var(--stamp-teal)";
+    bk.appendChild(s);
+    if (hasGSAP){
+      gsap.fromTo(s, {scale:2.6, opacity:0, rotation:8}, {scale:1, opacity:.9, rotation:-8, duration:.4, ease:"back.out(2)"});
+    }
+  }
+  // initial gentle float
+  if (hasGSAP){ gsap.to(".booklet", {y:-6, duration:2.4, repeat:-1, yoyo:true, ease:"sine.inOut"}); }
+
+  /* ---------- KEYS: sign / verify / forge ---------- */
+  var signInput = document.getElementById("signInput");
+  var sigOut = document.getElementById("sigOut");
+  var keyVerdict = document.getElementById("keyVerdict");
+  var lastSig = null, lastMsg = null;
+  function fakeHash(str){
+    var h = 2166136261;
+    for (var i=0;i<str.length;i++){ h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+    var hex = (h>>>0).toString(16).toUpperCase().padStart(8,"0");
+    return (hex+hex.split("").reverse().join("")).match(/../g).join(":");
+  }
+  function setVerdict(txt, good){
+    keyVerdict.textContent = txt;
+    keyVerdict.className = "verdict show " + (good?"good":"bad");
+  }
+  document.getElementById("signBtn").addEventListener("click", function(){
+    lastMsg = signInput.value;
+    lastSig = "SIG·" + fakeHash(lastMsg + "::privatekey");
+    sigOut.textContent = lastSig;
+    keyVerdict.className = "verdict";
+    if (hasGSAP) gsap.fromTo(sigOut, {backgroundColor:"#a8842f"}, {backgroundColor:"#162540", duration:.6});
+  });
+  document.getElementById("verifyBtn").addEventListener("click", function(){
+    if (lastSig===null){ setVerdict("Nothing signed yet — sign a message first.", false); return; }
+    if (signInput.value === lastMsg){
+      setVerdict("✓ Verified. Public key confirms this signature matches the message — and that only the private-key holder could have produced it.", true);
+    } else {
+      setVerdict("✗ Mismatch. The message changed after signing, so verification fails. Tampering is caught instantly.", false);
+    }
+  });
+  document.getElementById("forgeBtn").addEventListener("click", function(){
+    var forged = "SIG·" + fakeHash(signInput.value + "::guess" + Math.random());
+    sigOut.textContent = forged;
+    setVerdict("✗ Forgery rejected. Without the private key you can only guess — and the public key won't verify a guess. This is what makes a signature unforgeable.", false);
+    if (hasGSAP) gsap.fromTo(sigOut, {x:-6}, {x:0, duration:.4, ease:"elastic.out(1,.4)"});
+  });
+
+  /* ---------- ANATOMY ---------- */
+  var anatData = {
+    pub: { term:"Public key", field:"Subject Public Key Info", body:"Your \u201Cphoto\u201D — the public half of your key pair, printed for all to see. The matching private key never appears in the certificate. Anyone can use this to verify signatures from you, or to encrypt a secret only you can open." },
+    subject: { term:"Holder", field:"Subject (CN = Common Name)", body:"Who the certificate is for. For a website this is the domain. Historically read from the Common Name (CN), but modern clients ignore CN for hostnames and use the Subject Alternative Name instead." },
+    san: { term:"Valid names", field:"Subject Alternative Name (SAN)", body:"The authoritative list of hostnames this passport is good for. If the site you asked for isn\u2019t in here, the browser rejects it \u2014 even if everything else is perfect. This is the field that actually gets checked today." },
+    issuer: { term:"Issued by", field:"Issuer", body:"The authority that signed this certificate \u2014 the next link up the chain. For a leaf this points to the intermediate. The guard reads this to know whose passport to look at next." },
+    validity: { term:"Validity window", field:"Not Before / Not After", body:"A passport with an expiry date. Outside this window the certificate is invalid, no exceptions. Modern public certs are short-lived (often 90 days) so a leaked one stops being dangerous quickly \u2014 which is why automation matters." },
+    sig: { term:"The signature", field:"Signature Algorithm + Value", body:"The authority\u2019s unforgeable seal over everything above. The next certificate up the chain holds the public key that verifies this. Break this and the whole document is worthless \u2014 it\u2019s what binds the identity to the authority." }
+  };
+  var anatInfo = document.getElementById("anatInfo");
+  var anatFields = Array.prototype.slice.call(document.querySelectorAll("#anatomy .field"));
+  anatFields.forEach(function(f){
+    f.addEventListener("click", function(){
+      anatFields.forEach(function(x){ x.classList.remove("active"); });
+      f.classList.add("active");
+      var d = anatData[f.getAttribute("data-f")];
+      anatInfo.innerHTML = '<div class="term">'+d.term+'</div><div class="field-name">'+d.field+'</div><p>'+d.body+'</p>';
+      if (hasGSAP) gsap.fromTo(anatInfo, {opacity:.4, y:6}, {opacity:1, y:0, duration:.35});
+    });
+  });
+
+  /* ---------- HIERARCHY ---------- */
+  var tierData = {
+    root: { body:"<b>The national authority.</b> A self-signed certificate at the very top \u2014 it vouches for itself because there\u2019s nothing above it. Its private key is the crown jewel, kept offline in a vault (an HSM). It signs only a handful of long-lived intermediates, then goes back in the safe. Browsers and operating systems ship with a pre-installed set of these roots: that set is your <b>trust store</b>." },
+    inter: { body:"<b>The regional passport office.</b> Signed by the root, and authorised to sign certificates on its behalf. It does the daily work so the root never has to come out of the vault. If an intermediate\u2019s key is ever stolen, only that office is revoked \u2014 the root and everything else survive. Servers must <b>send</b> their intermediate(s) to clients, because clients usually only carry roots." },
+    leaf: { body:"<b>Your actual passport \u2014 the end-entity certificate.</b> This is the one a website actually serves. It identifies a specific domain, is signed by an intermediate, and can\u2019t sign anyone else (it\u2019s a leaf \u2014 nothing hangs below it). Short-lived and replaced often." }
+  };
+  var tierInfo = document.getElementById("tierInfo");
+  var tiers = Array.prototype.slice.call(document.querySelectorAll("#tiers .tier"));
+  tiers.forEach(function(t){
+    t.addEventListener("click", function(){
+      tiers.forEach(function(x){ x.classList.remove("active"); });
+      t.classList.add("active");
+      tierInfo.innerHTML = "<p>"+tierData[t.getAttribute("data-t")].body+"</p>";
+      if (hasGSAP) gsap.fromTo(tierInfo, {opacity:.4, y:6}, {opacity:1, y:0, duration:.35});
+    });
+  });
+
+  /* ---------- CHAIN / BORDER inspection ---------- */
+  var scenario = "valid";
+  var scnBtns = Array.prototype.slice.call(document.querySelectorAll(".scn"));
+  var chainStack = document.getElementById("chainStack");
+  var inspLog = document.getElementById("inspLog");
+  var verdictStamp = document.getElementById("verdictStamp");
+  var errAside = document.getElementById("errAside");
+  var leafName = document.getElementById("leafName");
+  var leafMeta = document.getElementById("leafMeta");
+  var vaultTag = document.getElementById("vaultTag");
+  var inspectBtn = document.getElementById("inspectBtn");
+  var links = {
+    leaf: chainStack.querySelector('[data-link="leaf"]'),
+    inter: chainStack.querySelector('[data-link="inter"]'),
+    root: chainStack.querySelector('[data-link="root"]')
+  };
+  var statuses = { leaf: document.getElementById("st-leaf"), inter: document.getElementById("st-inter"), root: document.getElementById("st-root") };
+
+  function resetChain(){
+    Object.keys(links).forEach(function(k){ links[k].className = "clink"; });
+    links.leaf.setAttribute("data-link","leaf");
+    links.inter.setAttribute("data-link","inter");
+    links.root.setAttribute("data-link","root");
+    verdictStamp.innerHTML = "";
+    errAside.className = "err-aside";
+    inspLog.innerHTML = '<div class="logline show"><span class="li">&#9656;</span><span>Awaiting traveller. Press \u201CPresent passport.\u201D</span></div>';
+    // apply scenario presentation
+    links.inter.classList.toggle("removed", scenario==="nointer");
+    if (scenario==="expired"){ leafName.textContent="api.example.com"; leafMeta.textContent="issued by TrustWorks CA G2 \u00B7 EXPIRED 2024-03-01"; }
+    else if (scenario==="selfsigned"){ leafName.textContent="api.example.com"; leafMeta.textContent="issued by api.example.com \u00B7 self-signed"; }
+    else { leafName.textContent="api.example.com"; leafMeta.textContent="issued by TrustWorks CA G2 \u00B7 valid 2026-01-04\u219204-04"; }
+  }
+  scnBtns.forEach(function(b){
+    b.addEventListener("click", function(){
+      scnBtns.forEach(function(x){ x.classList.remove("active"); });
+      b.classList.add("active");
+      scenario = b.getAttribute("data-s");
+      resetChain();
+    });
+  });
+
+  function logLine(text, cls, delay){
+    return new Promise(function(res){
+      setTimeout(function(){
+        var d = document.createElement("div");
+        d.className = "logline " + (cls||"");
+        d.innerHTML = '<span class="li">'+(cls==="good"?"\u2713":cls==="bad"?"\u2717":"\u25B8")+'</span><span>'+text+'</span>';
+        inspLog.appendChild(d);
+        // keep log scrolled
+        requestAnimationFrame(function(){ d.classList.add("show"); inspLog.scrollTop = inspLog.scrollHeight; });
+        res();
+      }, delay);
+    });
+  }
+  function setLink(k, cls){ links[k].classList.remove("checking","pass","fail"); links[k].classList.add(cls); }
+  function placeStamp(text, ok){
+    var s = makeStamp(text, ok?"ok":"bad");
+    s.style.position="relative"; s.style.color = ok?"var(--stamp-teal)":"var(--stamp-red)";
+    verdictStamp.innerHTML=""; verdictStamp.appendChild(s);
+    if (hasGSAP) gsap.fromTo(s, {scale:2.4, opacity:0, rotation:6}, {scale:1, opacity:.92, rotation:-7, duration:.4, ease:"back.out(2)"});
+  }
+  function showErr(txt){ errAside.textContent = "client error: " + txt; errAside.className = "err-aside show"; }
+
+  var running = false;
+  inspectBtn.addEventListener("click", function(){
+    if (running) return; running = true;
+    resetChain();
+    inspLog.innerHTML = "";
+    var seq = Promise.resolve();
+    seq = seq.then(function(){ return logLine("Traveller presents a passport for <b>api.example.com</b>.", "step", 150); });
+
+    // Step 1: read leaf + validity
+    seq = seq.then(function(){ setLink("leaf","checking"); return logLine("Reading the passport\u2026 holder = api.example.com, issuer = "+(scenario==="selfsigned"?"api.example.com":"TrustWorks CA G2")+".", "", 700); });
+    if (scenario==="expired"){
+      seq = seq.then(function(){ return logLine("Checking validity dates\u2026 <b>expired 2024-03-01</b>.", "bad", 700); });
+      seq = seq.then(function(){ setLink("leaf","fail"); statuses.leaf.textContent="\u2717 EXPIRED"; return logLine("Rejected. An expired passport is invalid no matter how genuine.", "bad", 500); });
+      seq = seq.then(function(){ placeStamp("REJECTED", false); showErr("certificate has expired"); running=false; });
+      return;
+    }
+    if (scenario==="selfsigned"){
+      seq = seq.then(function(){ return logLine("Issuer equals holder \u2014 this passport vouches for <i>itself</i>.", "bad", 700); });
+      seq = seq.then(function(){ setLink("leaf","fail"); statuses.leaf.textContent="\u2717 NO AUTHORITY"; return logLine("No independent authority signed it. Not in the trust store. Rejected.", "bad", 600); });
+      seq = seq.then(function(){ placeStamp("REJECTED", false); showErr("self-signed certificate"); running=false; });
+      return;
+    }
+    seq = seq.then(function(){ setLink("leaf","pass"); statuses.leaf.textContent="\u2713 OK"; return logLine("Dates valid, name matches the requested site.", "good", 600); });
+
+    // Step 2: find issuer (intermediate)
+    seq = seq.then(function(){ return logLine("Who vouches for it? Looking for issuer <b>TrustWorks CA G2</b>\u2026", "step", 700); });
+    if (scenario==="nointer"){
+      seq = seq.then(function(){ return logLine("The intermediate was <b>not presented</b>. The chain breaks here.", "bad", 700); });
+      seq = seq.then(function(){ statuses.leaf.textContent="\u2713 read"; return logLine("Cannot reach a trusted authority \u2014 the trail goes cold.", "bad", 600); });
+      seq = seq.then(function(){ placeStamp("REJECTED", false); showErr("unable to get local issuer certificate"); running=false; });
+      return;
+    }
+    seq = seq.then(function(){ setLink("inter","checking"); return logLine("Found the intermediate. Verifying it actually signed the passport\u2026", "", 700); });
+    seq = seq.then(function(){ setLink("inter","pass"); statuses.inter.textContent="\u2713 OK"; return logLine("Signature checks out. The leaf is genuinely vouched for.", "good", 600); });
+
+    // Step 3: intermediate -> root
+    seq = seq.then(function(){ return logLine("And who vouches for the intermediate? Issuer <b>TrustWorks Root CA</b>\u2026", "step", 700); });
+    seq = seq.then(function(){ setLink("root","checking"); return logLine("Is this root in my trust store? Checking the recognised-authorities list\u2026", "", 700); });
+    seq = seq.then(function(){ setLink("root","pass"); statuses.root.textContent="\u2713 TRUSTED"; return logLine("Yes \u2014 the chain ends at a root I already trust. Anchored.", "good", 600); });
+    seq = seq.then(function(){ return logLine("Chain complete: leaf \u2190 intermediate \u2190 trusted root.", "good", 400); });
+    seq = seq.then(function(){ placeStamp("ADMITTED", true); running=false; });
+  });
+  resetChain();
+
+  /* ---------- KEYSTORE vs TRUSTSTORE sorter ---------- */
+  var items = [
+    { id:"privkey", name:"\uD83D\uDD12 My private key", correct:"key", why:"Secret + mine \u2192 keystore" },
+    { id:"mycert", name:"\uD83D\uDCC4 My certificate (leaf)", correct:"key", why:"My identity to present \u2192 keystore" },
+    { id:"mychain", name:"\uD83D\uDD17 My intermediate chain", correct:"key", why:"Presented with my leaf \u2192 keystore" },
+    { id:"rootA", name:"\uD83C\uDFDB\uFE0F Root CA: TrustWorks", correct:"trust", why:"An authority I accept \u2192 truststore" },
+    { id:"rootB", name:"\uD83C\uDFDB\uFE0F Root CA: National-ID", correct:"trust", why:"An authority I accept \u2192 truststore" },
+    { id:"rootC", name:"\uD83E\uDD1D Partner company root", correct:"trust", why:"I choose to trust them \u2192 truststore" }
+  ];
+  var pool = document.getElementById("pool");
+  var dropKey = document.getElementById("dropKey");
+  var dropTrust = document.getElementById("dropTrust");
+  var ktDone = document.getElementById("ktDone");
+  var solved = 0;
+  function buildItem(it){
+    var el = document.createElement("div");
+    el.className = "item";
+    el.id = "item-"+it.id;
+    el.innerHTML = '<div class="iname">'+it.name+'</div>'+
+      '<div class="ibtns"><button class="ib" data-b="key">\uD83C\uDF92 Keystore</button><button class="ib" data-b="trust">\uD83D\uDCCB Truststore</button></div>'+
+      '<div class="why">\u2713 '+it.why+'</div>';
+    el.querySelectorAll(".ib").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var choice = btn.getAttribute("data-b");
+        if (choice === it.correct){
+          el.classList.add("correct","placed");
+          (choice==="key"?dropKey:dropTrust).appendChild(el);
+          solved++;
+          if (hasGSAP) gsap.fromTo(el, {scale:.85}, {scale:1, duration:.35, ease:"back.out(2)"});
+          if (solved === items.length){ ktDone.classList.add("show"); if(hasGSAP) gsap.fromTo(ktDone,{opacity:0,y:10},{opacity:1,y:0,duration:.5}); }
+        } else {
+          el.classList.add("wrong");
+          if (hasGSAP) gsap.fromTo(el, {x:-7}, {x:0, duration:.4, ease:"elastic.out(1,.4)"});
+          var hint = choice==="key" ? "Not your secret \u2014 it\u2019s an authority you trust. Try Truststore." : "This is your own identity/secret. Try Keystore.";
+          var w = el.querySelector(".iname");
+          var old = w.getAttribute("data-old"); if(!old){ w.setAttribute("data-old", w.textContent); }
+          w.style.color = "var(--stamp-red)";
+          var tip = el.querySelector(".tiptmp"); if(tip) tip.remove();
+          var t = document.createElement("div"); t.className="why tiptmp"; t.style.color="var(--stamp-red)"; t.style.display="block"; t.textContent = "\u2717 "+hint;
+          el.appendChild(t);
+          setTimeout(function(){ w.style.color=""; if(t&&t.parentNode) t.remove(); }, 2200);
+        }
+      });
+    });
+    return el;
+  }
+  items.forEach(function(it){ pool.appendChild(buildItem(it)); });
+
+  /* ---------- REALITY tiles ---------- */
+  var reality = [
+    { t:"Expired", b:"The passport\u2019s validity window has passed. Extremely common because someone forgot to renew. Fix: automate renewal (e.g. ACME / Let\u2019s Encrypt).", r:"\u201Ccertificate has expired\u201D" },
+    { t:"Name mismatch", b:"The site you asked for isn\u2019t listed in the certificate\u2019s SAN. Right passport, wrong person. Often a www vs non-www or a shared-host slip.", r:"\u201Cssl: no alternative certificate subject name matches\u201D" },
+    { t:"Self-signed", b:"A homemade ID nobody official vouches for. Fine inside a closed system if you add it to your own truststore; a hard warning everywhere else.", r:"\u201Cself-signed certificate\u201D" },
+    { t:"Untrusted root", b:"The chain ends at a root your trust store doesn\u2019t contain. Common with internal corporate CAs that haven\u2019t been distributed to clients.", r:"\u201Cunable to get issuer certificate\u201D" },
+    { t:"Missing intermediate", b:"The server served only its leaf and forgot the intermediate. Breaks strict clients while sometimes \u201Cworking\u201D in browsers \u2014 the maddening one.", r:"\u201Cunable to get local issuer certificate\u201D" }
+  ];
+  var rt = document.getElementById("realityTiles");
+  reality.forEach(function(x){
+    var d = document.createElement("div");
+    d.className = "tile";
+    d.innerHTML = '<h4>'+x.t+'<span class="badge">error</span></h4><p>'+x.b+'</p><span class="real">'+x.r+'</span>';
+    rt.appendChild(d);
+  });
+
+})();
+</script>
+</body>
+</html>

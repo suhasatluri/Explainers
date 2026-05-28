@@ -1,0 +1,1777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Security Times — TLS, mTLS, OAuth 2.0, OIDC & JWT, Explained</title>
+<meta name="description" content="An interactive, no-jargon explainer of TLS, mTLS, AuthN, AuthZ, OAuth 2.0, OpenID Connect and JWT — what they solve, where each one fits, and how to migrate from mTLS to modern authentication.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="The Security Times — Channel Security to Modern Identity">
+<meta property="og:description" content="An interactive newspaper-style explainer of TLS, mTLS, OAuth 2.0, OIDC and JWT — for engineers and the people who manage them.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20x='2'%20y='2'%20width='28'%20height='28'%20rx='5'%20fill='%23f3e9d6'%20stroke='%23211a12'%20stroke-width='2'/%3E%3Cpath%20d='M11%2014v-2a5%205%200%200%201%2010%200v2'%20fill='none'%20stroke='%23211a12'%20stroke-width='2'/%3E%3Crect%20x='9'%20y='14'%20width='14'%20height='10'%20rx='2'%20fill='%23d83a23'%20stroke='%23211a12'%20stroke-width='2'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<style>
+  :root{
+    --paper:#f3e9d6;
+    --paper-2:#ece0c8;
+    --paper-3:#e3d4b3;
+    --ink:#211a12;
+    --ink-soft:#4a3f30;
+    --ink-faint:#8a7a60;
+    --red:#d83a23;
+    --red-deep:#a82a17;
+    --teal:#136f63;
+    --teal-deep:#0d5048;
+    --mustard:#e7a52f;
+    --blue:#2a5d8f;
+    --line:#cdbd9d;
+    --line-soft:#ddcfb0;
+    --shadow:rgba(33,26,18,.18);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Newsreader',Georgia,serif;
+    font-size:19px;line-height:1.6;
+    overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:1;opacity:.55;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.35'/%3E%3C/svg%3E");
+    mix-blend-mode:multiply;
+  }
+  .mono{font-family:'Space Mono',monospace}
+  .display{font-family:'Fraunces',serif}
+
+  /* ---------- progress + nav ---------- */
+  #progress{position:fixed;top:0;left:0;height:4px;width:0;background:var(--red);z-index:60;transition:width .1s linear}
+  nav{
+    position:sticky;top:0;z-index:50;
+    background:var(--paper);
+    border-bottom:2px solid var(--ink);
+    display:flex;align-items:center;justify-content:space-between;
+    padding:.5rem clamp(1rem,4vw,3rem);
+    box-shadow:0 2px 0 var(--line);
+  }
+  nav .brand{font-family:'Fraunces',serif;font-weight:900;font-size:1.15rem;letter-spacing:-.02em;display:flex;align-items:center;gap:.5rem}
+  nav .brand .dot{width:11px;height:11px;border-radius:50%;background:var(--red);display:inline-block;animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.4);opacity:.5}}
+  nav ul{list-style:none;display:flex;gap:clamp(.4rem,1.6vw,1.4rem);flex-wrap:wrap;justify-content:flex-end}
+  nav a{
+    font-family:'Space Mono',monospace;font-size:.72rem;text-transform:uppercase;
+    letter-spacing:.08em;color:var(--ink-soft);text-decoration:none;padding:.3rem .1rem;
+    border-bottom:2px solid transparent;transition:color .2s,border-color .2s;white-space:nowrap;
+  }
+  nav a:hover{color:var(--red)}
+  nav a.active{color:var(--ink);border-color:var(--red)}
+
+  /* ---------- layout ---------- */
+  .wrap{max-width:1080px;margin:0 auto;padding:0 clamp(1rem,4vw,2rem);position:relative;z-index:2}
+  section{padding:clamp(3.5rem,8vw,6rem) 0;position:relative;z-index:2}
+  .kicker{
+    font-family:'Space Mono',monospace;font-size:.74rem;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--red-deep);display:inline-flex;align-items:center;gap:.6rem;margin-bottom:1rem;
+  }
+  .kicker::before{content:"";width:28px;height:2px;background:var(--red)}
+  h2.head{font-family:'Fraunces',serif;font-weight:900;font-size:clamp(2rem,6vw,3.6rem);line-height:1.02;letter-spacing:-.025em;margin-bottom:1rem}
+  .lede{font-size:clamp(1.05rem,2.4vw,1.3rem);color:var(--ink-soft);max-width:62ch;margin-bottom:2.5rem}
+
+  /* ---------- hero / masthead ---------- */
+  #hero{padding-top:clamp(2rem,5vw,4rem);text-align:center;border-bottom:2px solid var(--ink)}
+  .masthead-top{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);border-top:1px solid var(--line);padding:.4rem 0;font-family:'Space Mono',monospace;font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);flex-wrap:wrap;gap:.5rem}
+  .masthead{font-family:'Fraunces',serif;font-weight:900;font-size:clamp(1.9rem,8.5vw,5.4rem);line-height:1;letter-spacing:-.035em;margin:clamp(1rem,3vw,1.6rem) 0 .5rem;position:relative}
+  .masthead em{font-style:italic;color:var(--red)}
+  .masthead-sub{font-family:'Space Mono',monospace;font-size:.78rem;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-soft);border-top:1px solid var(--line);border-bottom:4px double var(--ink);display:inline-block;padding:.5rem 1rem;margin-bottom:1rem}
+  .origin-line{font-family:'Newsreader',serif;font-style:italic;font-size:.95rem;color:var(--ink-faint);margin:0 0 2.4rem}
+  .tldr{
+    max-width:62ch;margin:0 auto 2.5rem;font-family:'Fraunces',serif;font-size:clamp(1.2rem,3vw,1.7rem);
+    line-height:1.4;font-weight:500;text-align:center;
+  }
+  .tldr b{background:linear-gradient(transparent 60%, #f3cf6b 60%);font-weight:600;padding:0 .1em}
+
+  /* hero diagram */
+  .heroDiag{display:flex;align-items:center;justify-content:center;gap:clamp(.4rem,2.5vw,2rem);margin:2.5rem auto 1.5rem;max-width:760px;flex-wrap:nowrap;position:relative}
+  .heroNode{display:flex;flex-direction:column;align-items:center;gap:.5rem;flex:0 0 auto}
+  .heroNode .glyph{
+    width:clamp(56px,14vw,80px);height:clamp(56px,14vw,80px);border:2.5px solid var(--ink);background:var(--paper-2);
+    border-radius:14px;display:flex;align-items:center;justify-content:center;
+    box-shadow:4px 4px 0 var(--ink);position:relative;
+  }
+  .heroNode .glyph.dark{background:var(--ink);color:var(--paper);box-shadow:4px 4px 0 var(--red)}
+  .heroNode .label{font-family:'Space Mono',monospace;font-size:.66rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);text-align:center}
+  .heroNode .label b{color:var(--ink);display:block;font-size:.78rem}
+  .heroPipe{flex:1 1 auto;height:6px;border-top:2.5px solid var(--ink);border-bottom:2.5px solid var(--ink);min-width:24px;position:relative;align-self:flex-start;margin-top:clamp(30px,7vw,40px);background:repeating-linear-gradient(90deg,transparent 0 8px,var(--paper-3) 8px 14px)}
+  .heroPipe.locked::after{content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:24px;height:24px;background:var(--teal);border:2.5px solid var(--ink);border-radius:50%;display:flex;align-items:center;justify-content:center}
+  .heroPipe.locked::before{content:"🔒";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2;font-size:14px}
+
+  .btn{
+    font-family:'Space Mono',monospace;font-size:.82rem;letter-spacing:.08em;text-transform:uppercase;font-weight:700;
+    background:var(--red);color:var(--paper);border:2.5px solid var(--ink);padding:.85rem 1.6rem;border-radius:10px;
+    cursor:pointer;box-shadow:4px 4px 0 var(--ink);transition:transform .15s,box-shadow .15s;
+    display:inline-flex;align-items:center;gap:.5rem;
+  }
+  .btn:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--ink)}
+  .btn:active{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--ink)}
+  .btn.ghost{background:var(--paper);color:var(--ink)}
+  .btn.small{padding:.55rem 1rem;font-size:.7rem}
+
+  /* ---------- general blocks ---------- */
+  .grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.4rem;margin:1.5rem 0}
+  .panel{
+    border:2.5px solid var(--ink);background:var(--paper-2);border-radius:14px;padding:1.4rem;
+    box-shadow:5px 5px 0 var(--ink);position:relative;
+  }
+  .panel h4{font-family:'Fraunces',serif;font-weight:900;font-size:1.3rem;margin-bottom:.5rem;display:flex;align-items:center;gap:.6rem}
+  .panel p{color:var(--ink-soft);font-size:1rem}
+  .panel .tag{font-family:'Space Mono',monospace;font-size:.62rem;text-transform:uppercase;letter-spacing:.08em;background:var(--ink);color:var(--paper);padding:.2rem .55rem;border-radius:5px;display:inline-block;margin-bottom:.6rem}
+  .panel.warn{background:#f7e6c3;border-color:var(--ink)}
+  .panel.ok{background:#dce8de}
+  .panel.cool{background:#dde6ef}
+
+  ul.bullets{list-style:none;display:flex;flex-direction:column;gap:.4rem;margin-top:.6rem}
+  ul.bullets li{display:flex;gap:.55rem;color:var(--ink-soft);font-size:.98rem}
+  ul.bullets li::before{content:"›";color:var(--red);font-family:'Space Mono',monospace;font-weight:700;flex-shrink:0}
+
+  details.curious{margin-top:1.4rem;border:2px dashed var(--ink-faint);border-radius:10px;padding:.4rem 1rem;background:var(--paper-2)}
+  details.curious summary{font-family:'Space Mono',monospace;font-size:.74rem;text-transform:uppercase;letter-spacing:.1em;cursor:pointer;color:var(--ink-soft);padding:.5rem 0}
+  details.curious[open] summary{color:var(--red-deep)}
+  details.curious p, details.curious li{padding:.3rem 0;color:var(--ink-soft);font-size:1rem}
+  details.curious ul{padding-left:1.2rem;list-style:disc}
+
+  /* ---------- the stack section ---------- */
+  .stackBox{display:grid;grid-template-columns:1.3fr 1fr;gap:1.6rem;align-items:start}
+  @media (max-width:760px){.stackBox{grid-template-columns:1fr}}
+  .layers{display:flex;flex-direction:column;gap:.7rem}
+  .layer{
+    border:2.5px solid var(--ink);background:var(--paper-2);border-radius:12px;padding:1rem 1.1rem;
+    box-shadow:4px 4px 0 var(--ink);cursor:pointer;transition:transform .15s,box-shadow .15s,background .15s;
+    display:flex;align-items:center;gap:1rem;
+  }
+  .layer:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--ink)}
+  .layer.active{background:var(--ink);color:var(--paper)}
+  .layer.active .lyrTags span{background:var(--paper);color:var(--ink);border-color:var(--paper)}
+  .layer.active .lyrSub{color:var(--paper-3)}
+  .lyrNum{font-family:'Fraunces',serif;font-weight:900;font-size:1.8rem;color:var(--red);min-width:1.5em;text-align:center}
+  .layer.active .lyrNum{color:var(--mustard)}
+  .lyrMain{flex:1;min-width:0}
+  .lyrTitle{font-family:'Fraunces',serif;font-weight:900;font-size:1.15rem;letter-spacing:-.01em}
+  .lyrSub{font-size:.92rem;color:var(--ink-soft);margin-top:.15rem}
+  .lyrTags{display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.5rem}
+  .lyrTags span{
+    font-family:'Space Mono',monospace;font-size:.62rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+    border:1.5px solid var(--ink);padding:.18rem .5rem;border-radius:5px;background:var(--paper);color:var(--ink);
+  }
+  .stackInfo{
+    border:2.5px solid var(--ink);background:var(--paper-2);border-radius:14px;padding:1.6rem;
+    box-shadow:5px 5px 0 var(--ink);position:sticky;top:80px;min-height:300px;
+  }
+  .stackInfo .siKick{font-family:'Space Mono',monospace;font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:var(--red-deep);margin-bottom:.5rem}
+  .stackInfo .siTitle{font-family:'Fraunces',serif;font-weight:900;font-size:1.6rem;line-height:1.1;margin-bottom:.7rem}
+  .stackInfo .siQ{font-family:'Newsreader',serif;font-style:italic;color:var(--ink-soft);margin-bottom:.7rem;font-size:1.02rem}
+  .stackInfo .siBody{color:var(--ink-soft);font-size:1rem;line-height:1.55}
+  .stackInfo .siBody b{color:var(--ink)}
+
+  /* ---------- TLS / mTLS handshake stage (SVG sequence diagram) ---------- */
+  .handshake-wrap{
+    border:2.5px solid var(--ink);background:var(--paper-2);border-radius:14px;padding:1.4rem;
+    box-shadow:5px 5px 0 var(--ink);margin-top:1rem;
+  }
+  .hs-stage{
+    position:relative;background:var(--paper);border:2px solid var(--ink);border-radius:10px;overflow:hidden;
+  }
+  .hs-svg{display:block;width:100%;height:auto}
+  /* pipe */
+  .hs-pipe{stroke:var(--ink);stroke-width:3;stroke-dasharray:8,6;fill:none}
+  .hs-pipe-enc{stroke:var(--teal);stroke-width:8;fill:none;opacity:0;stroke-linecap:round}
+  /* actor blocks */
+  .hs-actor-shadow{fill:var(--ink)}
+  .hs-actor-shadow.server{fill:var(--red)}
+  .hs-actor-box{fill:var(--paper-2);stroke:var(--ink);stroke-width:3}
+  .hs-actor-box.server{fill:var(--ink)}
+  .hs-actor-icon{font-size:38px;text-anchor:middle;font-family:Arial,sans-serif}
+  .hs-actor-lbl{font-family:'Space Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.1em;text-anchor:middle;fill:var(--ink)}
+  .hs-actor-sub{font-family:'Newsreader',serif;font-style:italic;font-size:12px;text-anchor:middle;fill:var(--ink-soft)}
+  /* cert badges sitting on actors */
+  .hs-cert-badge{opacity:0}
+  .hs-cert-badge rect{fill:var(--mustard);stroke:var(--ink);stroke-width:2}
+  .hs-cert-badge text{font-size:14px;text-anchor:middle;font-family:Arial,sans-serif}
+  /* arrows */
+  .hs-arrow .arrow-path{fill:none;stroke:var(--ink);stroke-width:3;stroke-linecap:round;transition:stroke .4s ease,stroke-width .4s ease,opacity .4s ease}
+  .hs-arrow.muted .arrow-path{stroke:var(--ink-faint);stroke-width:2.25;opacity:.7}
+  .hs-arrow .label-bg{fill:var(--paper);stroke:var(--ink);stroke-width:2;transition:stroke .4s ease,opacity .4s ease}
+  .hs-arrow.muted .label-bg{stroke:var(--ink-faint);opacity:.85}
+  .hs-arrow .label-text{font-family:'Space Mono',monospace;font-size:11.5px;font-weight:700;fill:var(--ink);text-anchor:middle;transition:fill .4s ease}
+  .hs-arrow.muted .label-text{fill:var(--ink-faint)}
+  .hs-arrow .badge-bg{fill:var(--red);stroke:var(--ink);stroke-width:2;transition:fill .4s ease}
+  .hs-arrow.muted .badge-bg{fill:var(--ink-faint)}
+  .hs-arrow .badge-text{font-family:'Fraunces',serif;font-weight:900;font-size:13px;fill:var(--paper);text-anchor:middle}
+  /* controls / narrator */
+  .hs-controls{display:flex;gap:.7rem;flex-wrap:wrap;align-items:center;margin-top:1rem}
+  .hs-step{font-family:'Newsreader',serif;font-style:italic;color:var(--ink-soft);font-size:1rem;min-height:1.5em;flex:1;min-width:220px;text-align:right}
+  .hs-step b{color:var(--ink);font-style:normal}
+
+  /* ---------- side by side comparison ---------- */
+  .vsbar{display:flex;align-items:center;gap:1rem;margin:1.6rem 0 1rem;justify-content:center}
+  .vsbar .vs{font-family:'Fraunces',serif;font-weight:900;font-style:italic;font-size:2rem;color:var(--red)}
+
+  /* ---------- AuthN vs AuthZ ---------- */
+  .doorBox{
+    display:grid;grid-template-columns:1fr 1fr;gap:1.4rem;margin-top:1rem;
+  }
+  @media (max-width:680px){.doorBox{grid-template-columns:1fr}}
+  .door{
+    border:2.5px solid var(--ink);background:var(--paper-2);border-radius:14px;padding:1.4rem;
+    box-shadow:5px 5px 0 var(--ink);text-align:center;
+  }
+  .door .bigIcon{font-size:3.4rem;margin-bottom:.6rem;display:block;line-height:1}
+  .door h4{font-family:'Fraunces',serif;font-weight:900;font-size:1.6rem;margin-bottom:.2rem}
+  .door .q{font-family:'Newsreader',serif;font-style:italic;color:var(--red);font-size:1.05rem;margin-bottom:.7rem}
+  .door p{color:var(--ink-soft);font-size:1rem}
+  .door .ex{margin-top:.9rem;font-family:'Space Mono',monospace;font-size:.7rem;background:var(--paper);border:2px solid var(--ink);border-radius:8px;padding:.6rem .8rem;text-align:left}
+  .door .ex b{display:block;margin-bottom:.3rem;font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;color:var(--red-deep)}
+
+  /* ---------- OAuth flow ---------- */
+  .oauthStage{
+    background:var(--paper);border:2.5px solid var(--ink);border-radius:14px;padding:1.4rem;
+    box-shadow:5px 5px 0 var(--ink);position:relative;
+  }
+  .oauthGrid{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:.8rem;align-items:start;
+  }
+  @media (max-width:740px){.oauthGrid{grid-template-columns:repeat(2,1fr)}}
+  .oactor{
+    border:2.5px solid var(--ink);background:var(--paper-2);border-radius:12px;padding:.9rem .7rem;
+    text-align:center;box-shadow:3px 3px 0 var(--ink);position:relative;min-height:130px;
+  }
+  .oactor.you{background:#dde6ef}
+  .oactor.client{background:var(--paper-2)}
+  .oactor.auth{background:#f7e6c3}
+  .oactor.api{background:#dce8de}
+  .oactor .oi{font-size:2rem;line-height:1;display:block;margin-bottom:.3rem}
+  .oactor .on{font-family:'Fraunces',serif;font-weight:900;font-size:1rem;margin-bottom:.15rem}
+  .oactor .od{font-family:'Newsreader',serif;font-style:italic;color:var(--ink-soft);font-size:.78rem;line-height:1.25}
+
+  .oflow{
+    margin-top:1.2rem;border-top:2px dashed var(--ink-faint);padding-top:1rem;
+    font-family:'Space Mono',monospace;font-size:.78rem;color:var(--ink-soft);line-height:1.5;min-height:3em;
+  }
+  .oflow .ostep{display:flex;gap:.7rem;align-items:flex-start;padding:.4rem 0;border-bottom:1px dashed var(--line)}
+  .oflow .ostep:last-child{border-bottom:none}
+  .oflow .ostep .num{
+    font-family:'Fraunces',serif;font-weight:900;font-size:1rem;color:var(--paper);
+    background:var(--ink);width:1.6em;height:1.6em;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .oflow .ostep.active .num{background:var(--red)}
+  .oflow .ostep.active{color:var(--ink)}
+  .oflow .ostep .what{flex:1}
+  .oflow .ostep .who{font-size:.62rem;text-transform:uppercase;letter-spacing:.08em;color:var(--red-deep);margin-bottom:.2rem;font-weight:700}
+
+  .ofPacket{
+    position:absolute;font-family:'Space Mono',monospace;font-size:.62rem;font-weight:700;
+    background:var(--mustard);border:2px solid var(--ink);border-radius:6px;padding:.18rem .45rem;
+    box-shadow:2px 2px 0 var(--ink);pointer-events:none;opacity:0;z-index:5;
+  }
+  .ofPacket.token{background:var(--teal);color:var(--paper)}
+  .ofPacket.code{background:var(--mustard)}
+  .ofPacket.id{background:var(--red);color:var(--paper)}
+
+  /* ---------- JWT decoder ---------- */
+  .jwtRow{
+    font-family:'Space Mono',monospace;font-size:clamp(.8rem,2.2vw,1.05rem);font-weight:700;
+    word-break:break-all;background:var(--paper);border:2.5px solid var(--ink);border-radius:10px;
+    padding:1rem 1.1rem;box-shadow:4px 4px 0 var(--ink);line-height:1.5;margin-top:1rem;
+  }
+  .jwtRow .jp{cursor:pointer;transition:filter .15s,transform .15s;display:inline}
+  .jwtRow .jp:hover{filter:brightness(1.1)}
+  .jwtRow .jp.head{color:var(--red-deep);background:#f7d2cb;border-radius:4px;padding:0 .2em}
+  .jwtRow .jp.pay{color:var(--teal-deep);background:#cfe3da;border-radius:4px;padding:0 .2em}
+  .jwtRow .jp.sig{color:var(--blue);background:#d1dde9;border-radius:4px;padding:0 .2em}
+  .jwtRow .dot{color:var(--ink-faint);margin:0 .1em;font-weight:400}
+  .jwtParts{display:grid;grid-template-columns:repeat(3,1fr);gap:.9rem;margin-top:1rem}
+  @media (max-width:680px){.jwtParts{grid-template-columns:1fr}}
+  .jpart{
+    border:2.5px solid var(--ink);border-radius:12px;padding:1rem;
+    box-shadow:4px 4px 0 var(--ink);cursor:pointer;transition:transform .15s;
+  }
+  .jpart:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--ink)}
+  .jpart.head{background:#f7d2cb}
+  .jpart.pay{background:#cfe3da}
+  .jpart.sig{background:#d1dde9}
+  .jpart h5{font-family:'Fraunces',serif;font-weight:900;font-size:1.15rem;margin-bottom:.3rem}
+  .jpart .role{font-family:'Space Mono',monospace;font-size:.62rem;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft);margin-bottom:.5rem}
+  .jpart pre{font-family:'Space Mono',monospace;font-size:.72rem;background:var(--paper);border:1.5px solid var(--ink);border-radius:6px;padding:.55rem;overflow-x:auto;line-height:1.4;color:var(--ink)}
+  .jpart .why{margin-top:.6rem;font-size:.88rem;color:var(--ink-soft);line-height:1.45}
+
+  /* ---------- certs vs tokens map ---------- */
+  .ctMap{
+    display:grid;grid-template-columns:1fr 1fr;gap:1.4rem;margin-top:1.5rem;
+  }
+  @media (max-width:680px){.ctMap{grid-template-columns:1fr}}
+  .ctCol{
+    border:2.5px solid var(--ink);border-radius:14px;padding:1.4rem;
+    box-shadow:5px 5px 0 var(--ink);
+  }
+  .ctCol.cert{background:#f3e1c2}
+  .ctCol.tok{background:#dce8de}
+  .ctCol h4{font-family:'Fraunces',serif;font-weight:900;font-size:1.7rem;display:flex;align-items:center;gap:.6rem;margin-bottom:.4rem}
+  .ctCol .ctSub{font-style:italic;color:var(--ink-soft);margin-bottom:1rem;font-size:1rem}
+  .ctRow{
+    display:flex;align-items:flex-start;gap:.7rem;padding:.65rem 0;border-top:1px dashed var(--ink-faint);font-size:.95rem;color:var(--ink-soft);
+  }
+  .ctRow:first-of-type{border-top:none}
+  .ctRow b{display:block;color:var(--ink);font-family:'Space Mono',monospace;font-size:.7rem;letter-spacing:.04em;text-transform:uppercase;margin-bottom:.15rem}
+  .ctRow .ico{font-size:1.25rem;line-height:1.3;flex-shrink:0}
+
+  /* ---------- migration toggle ---------- */
+  .migSwitch{display:flex;align-items:center;gap:1rem;margin:1.4rem 0;justify-content:center;flex-wrap:wrap}
+  .migSwitch .state{font-family:'Space Mono',monospace;font-size:.74rem;letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--ink)}
+  .migSwitch .state.dim{color:var(--ink-faint)}
+  .migToggle{
+    width:78px;height:38px;border:2.5px solid var(--ink);background:var(--paper-2);border-radius:22px;
+    position:relative;cursor:pointer;box-shadow:3px 3px 0 var(--ink);
+  }
+  .migToggle .knob{
+    position:absolute;top:50%;left:4px;transform:translateY(-50%);
+    width:28px;height:28px;background:var(--red);border:2.5px solid var(--ink);border-radius:50%;
+    display:flex;align-items:center;justify-content:center;font-size:.8rem;color:var(--paper);font-weight:700;
+    transition:left .3s cubic-bezier(.7,-.3,.3,1.4),background .3s;
+  }
+  .migToggle.on .knob{left:42px;background:var(--teal)}
+
+  .migStage{
+    border:2.5px solid var(--ink);background:var(--paper);border-radius:14px;padding:1.4rem;
+    box-shadow:5px 5px 0 var(--ink);position:relative;min-height:340px;
+  }
+  .migStage svg{width:100%;height:auto;display:block;max-width:780px;margin:0 auto}
+  .migCaption{
+    text-align:center;font-family:'Newsreader',serif;font-style:italic;color:var(--ink-soft);
+    margin-top:1rem;max-width:60ch;margin-left:auto;margin-right:auto;font-size:1.02rem;line-height:1.5;
+  }
+  .migCaption b{color:var(--ink);font-style:normal}
+
+  .migPros{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1.5rem}
+  @media (max-width:600px){.migPros{grid-template-columns:1fr}}
+  .migCol{border:2.5px solid var(--ink);border-radius:12px;padding:1rem 1.2rem;background:var(--paper-2);box-shadow:3px 3px 0 var(--ink)}
+  .migCol h5{font-family:'Fraunces',serif;font-weight:900;font-size:1.1rem;margin-bottom:.5rem;display:flex;align-items:center;gap:.5rem}
+  .migCol.cons h5{color:var(--red-deep)}
+  .migCol.pros h5{color:var(--teal-deep)}
+  .migCol ul{list-style:none;display:flex;flex-direction:column;gap:.35rem;font-size:.95rem;color:var(--ink-soft)}
+  .migCol ul li{display:flex;gap:.45rem}
+  .migCol.cons ul li::before{content:"✗";color:var(--red);font-weight:900;font-family:'Space Mono',monospace}
+  .migCol.pros ul li::before{content:"✓";color:var(--teal);font-weight:900;font-family:'Space Mono',monospace}
+
+  /* ---------- decision guide ---------- */
+  .decideGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1.2rem;margin-top:1.3rem}
+  .dCard{
+    border:2.5px solid var(--ink);border-radius:14px;padding:1.4rem;background:var(--paper-2);
+    box-shadow:5px 5px 0 var(--ink);position:relative;transition:transform .15s,box-shadow .15s;
+  }
+  .dCard:hover{transform:translate(-3px,-3px);box-shadow:8px 8px 0 var(--ink)}
+  .dCard .if{
+    font-family:'Newsreader',serif;font-style:italic;color:var(--ink-soft);
+    font-size:1rem;line-height:1.4;margin-bottom:.8rem;
+  }
+  .dCard .if b{color:var(--ink);font-style:normal}
+  .dCard .arrow{font-family:'Space Mono',monospace;font-weight:700;color:var(--red);margin:.4rem 0;font-size:.7rem;letter-spacing:.1em;text-transform:uppercase}
+  .dCard .pick{font-family:'Fraunces',serif;font-weight:900;font-size:1.6rem;color:var(--ink);line-height:1.05;margin-bottom:.5rem}
+  .dCard .pick em{font-style:italic;color:var(--red)}
+  .dCard .ex{
+    font-family:'Space Mono',monospace;font-size:.72rem;color:var(--ink-soft);
+    border-top:1px dashed var(--ink-faint);padding-top:.6rem;margin-top:.7rem;line-height:1.5;
+  }
+  .dCard .ex b{display:block;color:var(--red-deep);font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;margin-bottom:.25rem}
+
+  /* ---------- recap ---------- */
+  #recap{border-top:2px solid var(--ink);text-align:center}
+  .recap-line{font-family:'Fraunces',serif;font-weight:500;font-size:clamp(1.25rem,3.5vw,1.9rem);line-height:1.4;max-width:62ch;margin:0 auto 2rem}
+  .recap-line b{color:var(--red);font-weight:900}
+  .checklist{list-style:none;display:inline-flex;flex-direction:column;gap:.6rem;text-align:left;margin:0 auto}
+  .checklist li{display:flex;align-items:flex-start;gap:.7rem;font-size:1.05rem;color:var(--ink-soft);max-width:64ch}
+  .checklist li::before{content:"✓";color:var(--teal);font-weight:900;font-family:'Space Mono',monospace;flex-shrink:0}
+  footer{border-top:4px double var(--ink);margin-top:3rem;padding:1.5rem 0;text-align:center;font-family:'Space Mono',monospace;font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint)}
+
+  /* ---------- glossary mini callouts ---------- */
+  .miniGloss{
+    border-left:4px solid var(--red);background:var(--paper-2);padding:.8rem 1rem;border-radius:0 8px 8px 0;
+    margin:1.2rem 0;font-size:.96rem;color:var(--ink-soft);line-height:1.55;
+  }
+  .miniGloss b{color:var(--ink);font-family:'Space Mono',monospace;font-size:.74rem;letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:.2rem}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+
+<nav>
+  <div class="brand"><span class="dot"></span>The Security Times</div>
+  <ul>
+    <li><a href="#stack" data-sec>Layers</a></li>
+    <li><a href="#tls" data-sec>TLS</a></li>
+    <li><a href="#mtls" data-sec>mTLS</a></li>
+    <li><a href="#authnz" data-sec>AuthN/Z</a></li>
+    <li><a href="#oauth" data-sec>OAuth</a></li>
+    <li><a href="#oidc" data-sec>OIDC</a></li>
+    <li><a href="#jwt" data-sec>JWT</a></li>
+    <li><a href="#certvtok" data-sec>Certs vs Tokens</a></li>
+    <li><a href="#migration" data-sec>Migration</a></li>
+    <li><a href="#decide" data-sec>Decide</a></li>
+  </ul>
+</nav>
+
+<!-- ===================== HERO ===================== -->
+<section id="hero">
+  <div class="wrap">
+    <div class="masthead-top">
+      <span>Vol. 1 — The Security Edition</span>
+      <span id="dateline">Late Edition</span>
+      <span>Price: Free · No jargon</span>
+    </div>
+    <h1 class="masthead">The <em>Security</em> Times</h1>
+    <div class="masthead-sub">From Locked Pipes to Trusted Tokens · TLS · mTLS · OAuth · OIDC · JWT</div>
+    <p class="origin-line">An interactive explainer for engineers, managers, and anyone who's tired of nodding politely when the security team starts talking.</p>
+
+    <p class="tldr">
+      <b>TLS</b> locks the pipe. <b>mTLS</b> makes both sides flash an ID badge.
+      <b>OAuth</b> hands out short-lived passes that say <b>"what you're allowed to do."</b>
+      <b>OIDC</b> adds a pass that says <b>"who you are."</b>
+      <b>JWT</b> is the paper the passes are printed on.
+    </p>
+
+    <!-- hero diagram: client - encrypted pipe - server -->
+    <div class="heroDiag">
+      <div class="heroNode">
+        <div class="glyph">💻</div>
+        <div class="label"><b>Client</b>browser / service</div>
+      </div>
+      <div class="heroPipe locked"></div>
+      <div class="heroNode">
+        <div class="glyph dark">🏛️</div>
+        <div class="label"><b>Server</b>API / app</div>
+      </div>
+    </div>
+    <p class="origin-line" style="margin-top:.5rem">↑ Everything in this paper is about what happens <em>inside</em> and <em>on top of</em> that locked pipe.</p>
+
+    <div style="display:flex;gap:.8rem;justify-content:center;flex-wrap:wrap">
+      <a class="btn" href="#stack">Start at the layers ↓</a>
+      <a class="btn ghost" href="#migration">Jump to migration →</a>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== THE STACK ===================== -->
+<section id="stack">
+  <div class="wrap">
+    <span class="kicker">The Stack</span>
+    <h2 class="head">Everything lives on a different floor</h2>
+    <p class="lede">
+      One reason these terms get muddled: people compare things that don't live at the same level.
+      TLS and OAuth aren't competitors — they're on different floors of the building. Tap a floor to see what it's actually doing.
+    </p>
+
+    <div class="stackBox">
+      <div class="layers" id="layers">
+        <div class="layer" data-id="transport">
+          <div class="lyrNum">5</div>
+          <div class="lyrMain">
+            <div class="lyrTitle">Transport / Channel</div>
+            <div class="lyrSub">The wire itself. Is the conversation private &amp; untampered?</div>
+            <div class="lyrTags"><span>TLS</span><span>mTLS</span></div>
+          </div>
+        </div>
+        <div class="layer" data-id="authn">
+          <div class="lyrNum">4</div>
+          <div class="lyrMain">
+            <div class="lyrTitle">Authentication (AuthN)</div>
+            <div class="lyrSub">Proving identity. "I am who I claim to be."</div>
+            <div class="lyrTags"><span>Certificates</span><span>Passwords</span><span>OIDC</span></div>
+          </div>
+        </div>
+        <div class="layer" data-id="authz">
+          <div class="lyrNum">3</div>
+          <div class="lyrMain">
+            <div class="lyrTitle">Authorization (AuthZ)</div>
+            <div class="lyrSub">Permission. "What am I allowed to do here?"</div>
+            <div class="lyrTags"><span>Scopes</span><span>Roles</span><span>Policies</span></div>
+          </div>
+        </div>
+        <div class="layer" data-id="proto">
+          <div class="lyrNum">2</div>
+          <div class="lyrMain">
+            <div class="lyrTitle">Protocol / Conversation</div>
+            <div class="lyrSub">How the parties talk: redirects, codes, callbacks, exchanges.</div>
+            <div class="lyrTags"><span>OAuth 2.0</span><span>OIDC</span></div>
+          </div>
+        </div>
+        <div class="layer" data-id="token">
+          <div class="lyrNum">1</div>
+          <div class="lyrMain">
+            <div class="lyrTitle">Token Format</div>
+            <div class="lyrSub">The actual piece of paper. What's written on it &amp; how it's signed.</div>
+            <div class="lyrTags"><span>JWT</span><span>Opaque tokens</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stackInfo" id="stackInfo">
+        <div class="siKick" id="siKick">Tap a layer →</div>
+        <div class="siTitle" id="siTitle">Five floors, one building</div>
+        <div class="siQ" id="siQ">"Which floor are we even talking about?"</div>
+        <div class="siBody" id="siBody">
+          When someone says "we use mTLS <i>and</i> OAuth," they're not being redundant —
+          they're using two floors at once. mTLS locks the pipe; OAuth decides who gets in and what they can touch.
+          Same building, different jobs. Tap any floor on the left to dig in.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== TLS ===================== -->
+<section id="tls">
+  <div class="wrap">
+    <span class="kicker">Floor 5 · Channel security</span>
+    <h2 class="head">TLS — the sealed envelope</h2>
+    <p class="lede">
+      <b>Transport Layer Security</b> turns a plain conversation between two computers into a sealed,
+      tamper-evident envelope. Anything written inside is unreadable to anyone watching the wire —
+      and the client gets proof it's actually talking to the right server.
+    </p>
+
+    <div class="miniGloss">
+      <b>What problem does it solve?</b>
+      Without TLS, anything sent over the network — passwords, payment info, your cat photos —
+      is visible to anyone in between (Wi-Fi snoops, ISPs, network gear). TLS gives you three things at once:
+      <b style="display:inline;background:none;color:var(--red-deep);text-transform:none;letter-spacing:0;font-family:inherit">confidentiality</b> (encrypted),
+      <b style="display:inline;background:none;color:var(--red-deep);text-transform:none;letter-spacing:0;font-family:inherit">integrity</b> (not tampered with), and
+      <b style="display:inline;background:none;color:var(--red-deep);text-transform:none;letter-spacing:0;font-family:inherit">server authentication</b> (you reached who you meant to reach).
+    </div>
+
+    <p style="margin-top:1.5rem;color:var(--ink-soft)">Hit <b>Play</b> to watch a TLS handshake. It's what your browser does silently every time you visit an HTTPS site.</p>
+
+    <div class="handshake-wrap">
+      <div class="hs-stage" id="tlsStage">
+        <svg class="hs-svg" viewBox="0 0 700 320" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+          <defs>
+            <marker id="ah-ink-tls" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#211a12"/>
+            </marker>
+            <marker id="ah-faint-tls" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#8a7a60"/>
+            </marker>
+          </defs>
+          <!-- pipe (always visible) -->
+          <line class="hs-pipe" x1="135" y1="160" x2="565" y2="160"/>
+          <!-- encrypted pipe (lights up at the end) -->
+          <line class="hs-pipe-enc" x1="135" y1="160" x2="565" y2="160"/>
+          <!-- arrows are drawn here dynamically -->
+          <g class="hs-arrows"></g>
+          <!-- client actor -->
+          <g class="hs-actor-client">
+            <rect class="hs-actor-shadow" x="54" y="124" width="80" height="80" rx="14"/>
+            <rect class="hs-actor-box" x="50" y="120" width="80" height="80" rx="14"/>
+            <text class="hs-actor-icon" x="90" y="173">💻</text>
+            <text class="hs-actor-lbl" x="90" y="223">CLIENT</text>
+            <text class="hs-actor-sub" x="90" y="240">browser / app</text>
+          </g>
+          <!-- server actor -->
+          <g class="hs-actor-server">
+            <rect class="hs-actor-shadow server" x="574" y="124" width="80" height="80" rx="14"/>
+            <rect class="hs-actor-box server" x="570" y="120" width="80" height="80" rx="14"/>
+            <text class="hs-actor-icon" x="610" y="173">🏛️</text>
+            <text class="hs-actor-lbl" x="610" y="223">SERVER</text>
+            <text class="hs-actor-sub" x="610" y="240">api.example.com</text>
+            <g class="hs-cert-badge hs-server-cert">
+              <rect x="639" y="106" width="24" height="28" rx="3"/>
+              <text x="651" y="125">📜</text>
+            </g>
+          </g>
+        </svg>
+      </div>
+      <div class="hs-controls">
+        <button class="btn" id="tlsPlay">▶ Play TLS handshake</button>
+        <button class="btn ghost small" id="tlsReset">Reset</button>
+        <div class="hs-step" id="tlsStep">Ready. Click <b>Play</b>.</div>
+      </div>
+    </div>
+
+    <details class="curious">
+      <summary>For the curious — what's actually in the handshake</summary>
+      <ul>
+        <li><b>ClientHello</b> — "Hi, here are the TLS versions and cipher suites I support."</li>
+        <li><b>ServerHello + Certificate</b> — "Here's the one I picked, and here's my X.509 certificate signed by a Certificate Authority you trust."</li>
+        <li><b>Key exchange</b> — both sides do some math (ECDHE) to agree on a shared secret <i>without</i> ever sending it on the wire.</li>
+        <li><b>Finished</b> — from now on, every byte is encrypted and authenticated with that shared secret.</li>
+        <li>In modern TLS 1.3 this happens in a single round trip. The client never sent a certificate of its own — the server doesn't know <i>who</i> you are, only that the channel is secure.</li>
+      </ul>
+    </details>
+  </div>
+</section>
+
+<!-- ===================== mTLS ===================== -->
+<section id="mtls">
+  <div class="wrap">
+    <span class="kicker">Floor 5 · Mutual channel security</span>
+    <h2 class="head">mTLS — both sides flash a badge</h2>
+    <p class="lede">
+      In regular TLS only the <i>server</i> proves who it is. <b>mTLS (Mutual TLS)</b> adds one more
+      step: the <i>client</i> also presents a certificate, and the server checks it before letting the conversation continue.
+      No valid client cert, no connection.
+    </p>
+
+    <div class="miniGloss">
+      <b>What problem does it solve?</b>
+      "How do I make sure only <i>my own</i> services talk to this API — not just any caller on the internet?"
+      mTLS gives you machine-to-machine identity baked into the TLS handshake itself, before a single byte of the actual request is processed. It's how most service meshes do service-to-service auth today.
+    </div>
+
+    <p style="margin-top:1.5rem;color:var(--ink-soft)">Same handshake, but watch the client pull out its own cert this time.</p>
+
+    <div class="handshake-wrap">
+      <div class="hs-stage" id="mtlsStage">
+        <svg class="hs-svg" viewBox="0 0 700 320" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+          <defs>
+            <marker id="ah-ink-mtls" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#211a12"/>
+            </marker>
+            <marker id="ah-faint-mtls" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#8a7a60"/>
+            </marker>
+          </defs>
+          <line class="hs-pipe" x1="135" y1="160" x2="565" y2="160"/>
+          <line class="hs-pipe-enc" x1="135" y1="160" x2="565" y2="160"/>
+          <g class="hs-arrows"></g>
+          <!-- client actor -->
+          <g class="hs-actor-client">
+            <rect class="hs-actor-shadow" x="54" y="124" width="80" height="80" rx="14"/>
+            <rect class="hs-actor-box" x="50" y="120" width="80" height="80" rx="14"/>
+            <text class="hs-actor-icon" x="90" y="173">💻</text>
+            <text class="hs-actor-lbl" x="90" y="223">CLIENT</text>
+            <text class="hs-actor-sub" x="90" y="240">service-a</text>
+            <g class="hs-cert-badge hs-client-cert">
+              <rect x="116" y="106" width="24" height="28" rx="3"/>
+              <text x="128" y="125">📜</text>
+            </g>
+          </g>
+          <!-- server actor -->
+          <g class="hs-actor-server">
+            <rect class="hs-actor-shadow server" x="574" y="124" width="80" height="80" rx="14"/>
+            <rect class="hs-actor-box server" x="570" y="120" width="80" height="80" rx="14"/>
+            <text class="hs-actor-icon" x="610" y="173">🏛️</text>
+            <text class="hs-actor-lbl" x="610" y="223">SERVER</text>
+            <text class="hs-actor-sub" x="610" y="240">service-b</text>
+            <g class="hs-cert-badge hs-server-cert">
+              <rect x="639" y="106" width="24" height="28" rx="3"/>
+              <text x="651" y="125">📜</text>
+            </g>
+          </g>
+        </svg>
+      </div>
+      <div class="hs-controls">
+        <button class="btn" id="mtlsPlay">▶ Play mTLS handshake</button>
+        <button class="btn ghost small" id="mtlsReset">Reset</button>
+        <div class="hs-step" id="mtlsStep">Ready. Click <b>Play</b>.</div>
+      </div>
+    </div>
+
+    <details class="curious">
+      <summary>For the curious — the operational reality of running mTLS</summary>
+      <ul>
+        <li>Every service needs its own certificate, signed by a CA that the other side trusts.</li>
+        <li>Certs expire. Short-lived certs are safer but force you to build rotation. Long-lived certs are easier but risky.</li>
+        <li>Revocation is famously hard. CRLs and OCSP have well-known weaknesses; many places just rely on short expiry.</li>
+        <li>You need a Public Key Infrastructure (PKI) — usually an internal CA, often something like cert-manager, Vault PKI, or SPIFFE/SPIRE.</li>
+        <li>mTLS gives you <b>identity of the caller</b> but not really <b>identity of the human user behind the call</b>, or fine-grained permissions. That's why modern stacks pair it with tokens.</li>
+      </ul>
+    </details>
+  </div>
+</section>
+
+<!-- ===================== TLS vs mTLS ===================== -->
+<section id="tlsvmtls">
+  <div class="wrap">
+    <span class="kicker">Compare</span>
+    <h2 class="head">TLS vs mTLS — at a glance</h2>
+    <p class="lede">Same protocol, one extra step, very different use cases.</p>
+
+    <div class="grid-2">
+      <div class="panel">
+        <span class="tag">TLS</span>
+        <h4>🔒 One-way auth</h4>
+        <p>The <b>server</b> proves itself with a certificate. The <b>client</b> stays anonymous at the transport layer.</p>
+        <ul class="bullets">
+          <li>Used by: virtually every HTTPS website on Earth</li>
+          <li>Identifies: the server only</li>
+          <li>Trust model: a public CA your browser already trusts</li>
+          <li>Pain: low. It just works.</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <span class="tag">mTLS</span>
+        <h4>🔐 Two-way auth</h4>
+        <p>Both <b>server</b> and <b>client</b> present certificates. The server only continues if it recognizes and trusts the client's cert.</p>
+        <ul class="bullets">
+          <li>Used by: service-to-service inside an org, B2B integrations, IoT devices</li>
+          <li>Identifies: both sides</li>
+          <li>Trust model: usually a private/internal CA</li>
+          <li>Pain: PKI ops — issuing, rotating, revoking certs at scale</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="miniGloss">
+      <b>One sentence summary</b>
+      TLS asks <i>"is this server who it claims to be, and is our chat private?"</i> — mTLS adds
+      <i>"…and is this client also who it claims to be?"</i>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== AuthN vs AuthZ ===================== -->
+<section id="authnz">
+  <div class="wrap">
+    <span class="kicker">Floors 4 &amp; 3 · Identity vs permission</span>
+    <h2 class="head">AuthN vs AuthZ — the bouncer at the door</h2>
+    <p class="lede">
+      Two different jobs that get confused all the time. A nightclub bouncer does both, but in order.
+      <b>First</b> they check who you are. <b>Then</b> they check what wristband you're wearing.
+    </p>
+
+    <div class="doorBox">
+      <div class="door">
+        <span class="bigIcon">🛂</span>
+        <h4>AuthN</h4>
+        <div class="q">"Who are you?"</div>
+        <p>Proves identity. The bouncer looks at your ID. Either it's you, or it isn't.</p>
+        <div class="ex">
+          <b>Real-world tools</b>
+          • Password + MFA<br>
+          • TLS / mTLS client cert<br>
+          • OIDC ID token<br>
+          • Biometric / passkey
+        </div>
+      </div>
+      <div class="door">
+        <span class="bigIcon">🎟️</span>
+        <h4>AuthZ</h4>
+        <div class="q">"What are you allowed to do?"</div>
+        <p>Decides permissions. The bouncer looks at your wristband. VIP? Bar only? Backstage?</p>
+        <div class="ex">
+          <b>Real-world tools</b>
+          • OAuth 2.0 scopes<br>
+          • Roles (RBAC) / attributes (ABAC)<br>
+          • Policy engines (OPA, Cedar)<br>
+          • API gateway rules
+        </div>
+      </div>
+    </div>
+
+    <div class="miniGloss">
+      <b>Why this matters</b>
+      The biggest source of confusion in this whole space:
+      <b style="display:inline;background:none;color:var(--red-deep);text-transform:none;letter-spacing:0;font-family:inherit">OAuth 2.0 was designed for AuthZ — not AuthN.</b>
+      People kept misusing it for "log in with X", which is why <b style="display:inline;background:none;color:var(--red-deep);text-transform:none;letter-spacing:0;font-family:inherit">OIDC</b> was created — to put a proper AuthN layer on top.
+    </div>
+  </div>
+</section>
+
+<!-- ===================== OAuth 2.0 ===================== -->
+<section id="oauth">
+  <div class="wrap">
+    <span class="kicker">Floor 2 · The delegation protocol</span>
+    <h2 class="head">OAuth 2.0 — the valet key</h2>
+    <p class="lede">
+      You drive up to a hotel. You don't hand the valet the deed to your car — you hand them a
+      <i>valet key</i>: starts the engine, opens the doors, but won't open the glovebox and stops working
+      at the end of the night. That's OAuth. A user lets an app do <i>specific things on their behalf</i>,
+      for a <i>limited time</i>, without ever sharing the password.
+    </p>
+
+    <div class="miniGloss">
+      <b>What problem does it solve?</b>
+      Before OAuth, if a third-party app wanted access to your photos or your email,
+      it had to ask for your username and password — and store them somewhere. Terrifying.
+      OAuth replaces that with: <i>"Click here, log in to the real service, and it'll hand the app a limited access token instead."</i>
+    </div>
+
+    <p style="margin-top:1.5rem;color:var(--ink-soft)">Press <b>Run flow</b> to watch the most common OAuth dance — the <b>Authorization Code flow</b>.</p>
+
+    <div class="oauthStage" id="oauthStage">
+      <div class="oauthGrid">
+        <div class="oactor you" id="oa-user">
+          <span class="oi">🧑</span>
+          <div class="on">User</div>
+          <div class="od">(the human, in their browser)</div>
+        </div>
+        <div class="oactor client" id="oa-client">
+          <span class="oi">📱</span>
+          <div class="on">Client App</div>
+          <div class="od">("ShinyApp" — wants access)</div>
+        </div>
+        <div class="oactor auth" id="oa-auth">
+          <span class="oi">🏛️</span>
+          <div class="on">Auth Server</div>
+          <div class="od">(issues tokens, e.g. Okta, Entra ID, Auth0, Keycloak)</div>
+        </div>
+        <div class="oactor api" id="oa-api">
+          <span class="oi">🗄️</span>
+          <div class="on">Resource Server</div>
+          <div class="od">(your API — the thing being protected)</div>
+        </div>
+      </div>
+
+      <div class="oflow" id="oflow">
+        <div class="ostep" data-step="1"><div class="num">1</div><div class="what"><div class="who">User → Client App</div>"I'd like to use ShinyApp."</div></div>
+        <div class="ostep" data-step="2"><div class="num">2</div><div class="what"><div class="who">Client App → Auth Server (via browser redirect)</div>"Hey Auth Server, please log this user in for me. Here's what I'm asking for (scopes)."</div></div>
+        <div class="ostep" data-step="3"><div class="num">3</div><div class="what"><div class="who">User ↔ Auth Server</div>User logs in directly with the Auth Server (password, MFA, passkey…). The client app <b>never sees the password</b>.</div></div>
+        <div class="ostep" data-step="4"><div class="num">4</div><div class="what"><div class="who">Auth Server → Client App</div>"Login OK. Here's a one-time <b>authorization code</b>."</div></div>
+        <div class="ostep" data-step="5"><div class="num">5</div><div class="what"><div class="who">Client App → Auth Server (back-channel)</div>"Trade this code for a real <b>access token</b>." (And a refresh token, usually.)</div></div>
+        <div class="ostep" data-step="6"><div class="num">6</div><div class="what"><div class="who">Client App → Resource Server</div>Calls the API with <code>Authorization: Bearer &lt;access token&gt;</code>. The API verifies the token and returns data.</div></div>
+      </div>
+    </div>
+
+    <div class="hs-controls" style="margin-top:1rem">
+      <button class="btn" id="oauthPlay">▶ Run flow</button>
+      <button class="btn ghost small" id="oauthReset">Reset</button>
+      <div class="hs-step" id="oauthStep">Ready. Six steps total.</div>
+    </div>
+
+    <details class="curious">
+      <summary>Other OAuth flows you'll see in the wild</summary>
+      <ul>
+        <li><b>Authorization Code + PKCE</b> — the modern default for any app with a browser or a mobile UI. PKCE prevents code interception.</li>
+        <li><b>Client Credentials</b> — no human involved. Service-to-service. Client says "here's my ID and secret, give me a token." Common for backend jobs.</li>
+        <li><b>Device Code</b> — for things that can't show a browser (TVs, CLIs). You see "go to a URL and enter code <code>WXYZ</code>" on another device.</li>
+        <li><b>Resource Owner Password (legacy)</b> — app collects your password. Discouraged today. Avoid in new designs.</li>
+        <li><b>Implicit (legacy)</b> — superseded by Auth Code + PKCE. Don't use for new things.</li>
+      </ul>
+    </details>
+  </div>
+</section>
+
+<!-- ===================== OIDC ===================== -->
+<section id="oidc">
+  <div class="wrap">
+    <span class="kicker">Floor 4 + Floor 2 · Identity on top of OAuth</span>
+    <h2 class="head">OIDC — adding "who you are" to OAuth</h2>
+    <p class="lede">
+      <b>OpenID Connect</b> is a thin layer built directly on top of OAuth 2.0. Same dance, but you ask for
+      one extra scope — <code>openid</code> — and the Auth Server hands back <i>two</i> tokens instead of one.
+    </p>
+
+    <div class="grid-2">
+      <div class="panel cool">
+        <span class="tag">access_token</span>
+        <h4>🎟️ The wristband</h4>
+        <p><b>OAuth.</b> Tells an API <i>what you're allowed to do</i>. Sent on every API call.</p>
+        <ul class="bullets">
+          <li>For: <b>APIs</b> (resource servers)</li>
+          <li>Answers: <i>"is this caller allowed to read /orders?"</i></li>
+          <li>Can be opaque or a JWT — either way, the API checks it</li>
+        </ul>
+      </div>
+      <div class="panel warn">
+        <span class="tag">id_token</span>
+        <h4>🛂 The ID card</h4>
+        <p><b>OIDC.</b> Tells the client app <i>who the user is</i>. Used once at login.</p>
+        <ul class="bullets">
+          <li>For: <b>the client app itself</b></li>
+          <li>Answers: <i>"who just signed in?"</i> (name, email, sub)</li>
+          <li>Always a JWT, always signed by the Auth Server</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="miniGloss">
+      <b>Easy rule of thumb</b>
+      OAuth alone = <i>"this app can do X for you."</i> &nbsp;
+      OAuth + OIDC = <i>"this app can do X for you, AND here's a signed receipt saying it was definitely <b style="display:inline;background:none;color:var(--red-deep);text-transform:none;letter-spacing:0;font-family:inherit">you</b> who logged in."</i>
+      Almost every "Sign in with Google / GitHub / Microsoft" button in the world is OIDC under the hood.
+    </div>
+  </div>
+</section>
+
+<!-- ===================== JWT ===================== -->
+<section id="jwt">
+  <div class="wrap">
+    <span class="kicker">Floor 1 · The token format</span>
+    <h2 class="head">JWT — the paper the passes are printed on</h2>
+    <p class="lede">
+      A <b>JSON Web Token</b> is a format, not a protocol. Three Base64-encoded chunks joined by dots:
+      <code>header.payload.signature</code>. Tap any chunk to see what's inside.
+    </p>
+
+    <div class="jwtRow" id="jwtRow">
+      <span class="jp head" data-part="head">eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9</span><span class="dot">.</span><span class="jp pay" data-part="pay">eyJzdWIiOiIxMjMiLCJuYW1lIjoiSmFuZSBEb2UiLCJleHAiOjE3MjE2MDAwMDB9</span><span class="dot">.</span><span class="jp sig" data-part="sig">SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c</span>
+    </div>
+
+    <div class="jwtParts">
+      <div class="jpart head">
+        <div class="role">Part 1 · Header</div>
+        <h5>Metadata</h5>
+        <pre>{
+  "alg": "RS256",
+  "typ": "JWT"
+}</pre>
+        <p class="why"><b>alg</b> is the signing algorithm. <b>typ</b> is what kind of token this is. That's it — the header just says "here's how to read me."</p>
+      </div>
+      <div class="jpart pay">
+        <div class="role">Part 2 · Payload (the claims)</div>
+        <h5>The actual content</h5>
+        <pre>{
+  "sub": "123",
+  "name": "Jane Doe",
+  "iss": "auth.example.com",
+  "aud": "orders-api",
+  "exp": 1721600000,
+  "scope": "orders:read"
+}</pre>
+        <p class="why">Each line is a <b>claim</b>. <code>sub</code>=subject, <code>iss</code>=issuer, <code>aud</code>=audience, <code>exp</code>=expiry. Anything extra (scopes, roles, tenant) goes here too.</p>
+      </div>
+      <div class="jpart sig">
+        <div class="role">Part 3 · Signature</div>
+        <h5>The proof</h5>
+        <pre>RSA-Sign(
+  header + "." + payload,
+  authServerPrivateKey
+)</pre>
+        <p class="why">Signing the first two parts with the Auth Server's private key. Anyone with the <b>public</b> key can verify it's authentic and untampered — without calling the Auth Server every time.</p>
+      </div>
+    </div>
+
+    <div class="miniGloss" style="margin-top:1.5rem">
+      <b>Signed ≠ encrypted</b>
+      A plain JWT is <i>signed</i>, not encrypted. Anyone who has the token can read its payload —
+      so <b style="display:inline;background:none;color:var(--red-deep);text-transform:none;letter-spacing:0;font-family:inherit">don't put secrets in it</b>.
+      Treat the payload like a postcard: tamper-proof but readable. If you genuinely need encryption, JWE is a separate spec — but most teams just rely on TLS for confidentiality in transit and short token lifetimes.
+    </div>
+
+    <details class="curious">
+      <summary>How OAuth, OIDC, and JWT actually fit together</summary>
+      <ul>
+        <li><b>OAuth 2.0</b> = the protocol (the conversation between user, client app, auth server, API)</li>
+        <li><b>OIDC</b> = an extension of OAuth that adds an ID token, so the client knows <i>who</i> logged in</li>
+        <li><b>JWT</b> = the file format the tokens are often (but not always) printed in</li>
+        <li>OIDC's <b>id_token</b> is <b>always</b> a JWT. OAuth's <b>access_token</b> is <b>often</b> a JWT but is allowed to be anything (e.g. an opaque random string the API looks up via <i>introspection</i>).</li>
+      </ul>
+    </details>
+  </div>
+</section>
+
+<!-- ===================== Certs vs Tokens ===================== -->
+<section id="certvtok">
+  <div class="wrap">
+    <span class="kicker">Where things live</span>
+    <h2 class="head">Certificates vs Tokens — when each one fits</h2>
+    <p class="lede">
+      Both are little signed pieces of evidence. The difference is what they're <i>for</i>, how long they live,
+      and how painful they are to rotate.
+    </p>
+
+    <div class="ctMap">
+      <div class="ctCol cert">
+        <h4>📜 Certificates (X.509)</h4>
+        <div class="ctSub">Long-lived identity, baked into the TLS layer.</div>
+        <div class="ctRow"><span class="ico">🏭</span><div><b>What identifies</b>A machine, service, or device — rarely a human user.</div></div>
+        <div class="ctRow"><span class="ico">⏱️</span><div><b>Lifetime</b>Months to years (or hours, if you have automation).</div></div>
+        <div class="ctRow"><span class="ico">🏛️</span><div><b>Trust chain</b>Chain back to a Certificate Authority both sides trust.</div></div>
+        <div class="ctRow"><span class="ico">🛠️</span><div><b>Used by</b>TLS, mTLS, code signing, document signing, SPIFFE/SPIRE.</div></div>
+        <div class="ctRow"><span class="ico">😬</span><div><b>Pain</b>Distribution, rotation, revocation. Needs real PKI ops.</div></div>
+      </div>
+      <div class="ctCol tok">
+        <h4>🎟️ Tokens (e.g. JWT)</h4>
+        <div class="ctSub">Short-lived claims, sit above TLS.</div>
+        <div class="ctRow"><span class="ico">🧑</span><div><b>What identifies</b>A user, a session, or a delegated call — what they're allowed to do right now.</div></div>
+        <div class="ctRow"><span class="ico">⏱️</span><div><b>Lifetime</b>Minutes to hours. Renewed via refresh tokens.</div></div>
+        <div class="ctRow"><span class="ico">🏛️</span><div><b>Trust chain</b>Signed by an Auth Server whose public keys you trust.</div></div>
+        <div class="ctRow"><span class="ico">🛠️</span><div><b>Used by</b>OAuth 2.0, OIDC, API gateways, SPAs, mobile apps.</div></div>
+        <div class="ctRow"><span class="ico">😌</span><div><b>Pain</b>Lower. Expire fast, rotation is automatic, no CRL to babysit.</div></div>
+      </div>
+    </div>
+
+    <div class="miniGloss">
+      <b>The clearest mental model</b>
+      Certificates answer <i>"is this <b style="display:inline;background:none;color:var(--red-deep);text-transform:none;letter-spacing:0;font-family:inherit">machine</b> who it claims to be?"</i>
+      Tokens answer <i>"on behalf of which <b style="display:inline;background:none;color:var(--red-deep);text-transform:none;letter-spacing:0;font-family:inherit">user</b>, with what permissions, for how long, is this call being made?"</i>
+      Modern stacks happily use both — certificates underneath, tokens on top.
+    </div>
+  </div>
+</section>
+
+<!-- ===================== MIGRATION ===================== -->
+<section id="migration">
+  <div class="wrap">
+    <span class="kicker">The Migration</span>
+    <h2 class="head">From mTLS-only to OAuth / OIDC + JWT</h2>
+    <p class="lede">
+      mTLS works. So why are we changing? Flip the switch to see the old pattern, then the modern pattern,
+      side by side. The short version: mTLS proves <i>which machine</i> called us. Today we also need to know
+      <i>which user the machine is acting for</i>, what they're allowed to do, and we need to scale that across many services.
+    </p>
+
+    <div class="migSwitch">
+      <span class="state" id="migOff">Old · mTLS only</span>
+      <div class="migToggle" id="migToggle" role="button" tabindex="0" aria-label="Toggle migration view">
+        <div class="knob">←</div>
+      </div>
+      <span class="state dim" id="migOn">Modern · OAuth/OIDC + JWT</span>
+    </div>
+
+    <div class="migStage">
+      <svg id="migSVG" viewBox="0 0 780 360" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+    <p class="migCaption" id="migCaption">
+      <b>Old pattern.</b> Every service has its own cert from an internal CA. mTLS proves <i>"this is service-a calling service-b"</i> — but nothing in the call tells service-b <i>which user</i> service-a is acting for, or what that user is allowed to do.
+    </p>
+
+    <div class="migPros">
+      <div class="migCol cons">
+        <h5>Why mTLS-only struggles at scale</h5>
+        <ul>
+          <li>No user identity in the call — services have to ask "who's the user?" out-of-band</li>
+          <li>No standard way to express fine-grained permissions (just "you have a valid cert")</li>
+          <li>Cert lifecycle is heavyweight: issuance, rotation, revocation, CA management</li>
+          <li>Hard to delegate: a service can't easily say "I'm acting on behalf of Jane right now"</li>
+          <li>Cross-org integrations turn into "please put your CA on our trust list"</li>
+        </ul>
+      </div>
+      <div class="migCol pros">
+        <h5>Why modern stacks add OAuth/OIDC + JWT</h5>
+        <ul>
+          <li>User identity flows from the edge all the way through the call chain (in the JWT)</li>
+          <li>Fine-grained permissions via scopes &amp; claims — easy to express, easy to enforce</li>
+          <li>Short token lifetimes mean revocation is mostly "wait a few minutes"</li>
+          <li>Auth logic lives in <b>one</b> place (the Auth Server), not scattered across services</li>
+          <li>Plays well with humans, SPAs, mobile, partners, and machine-to-machine alike</li>
+        </ul>
+      </div>
+    </div>
+
+    <details class="curious">
+      <summary>The migration in practice — what teams actually do</summary>
+      <ul>
+        <li><b>Keep TLS everywhere.</b> The pipe still needs to be encrypted. This part doesn't change.</li>
+        <li><b>Don't necessarily drop mTLS.</b> Many modern designs <i>keep</i> mTLS for service-to-service identity (especially in a service mesh) <b>and</b> add OAuth tokens on top for user identity and authz. Belt and braces.</li>
+        <li><b>Introduce an Auth Server.</b> Pick one (Keycloak, Okta, Entra ID, Auth0, AWS Cognito, etc.). It becomes the single source of truth for identity.</li>
+        <li><b>Validate tokens at the edge first.</b> An API gateway can verify JWT signatures, expiry, audience, and scopes before traffic even reaches your service.</li>
+        <li><b>Propagate the user.</b> Downstream services either re-verify the same JWT or use token exchange to get a downstream-scoped token.</li>
+        <li><b>Migrate one service at a time.</b> Run mTLS-only and OAuth side-by-side during the cutover. Don't flip everything in one go.</li>
+      </ul>
+    </details>
+  </div>
+</section>
+
+<!-- ===================== DECIDE ===================== -->
+<section id="decide">
+  <div class="wrap">
+    <span class="kicker">Decision Guide</span>
+    <h2 class="head">If you need X, reach for Y</h2>
+    <p class="lede">A short, opinionated cheat sheet. Pin it to the wall, hand it to a junior engineer, or use it in the next architecture review.</p>
+
+    <div class="decideGrid">
+      <div class="dCard">
+        <div class="if">If the need is <b>channel security only</b> — encrypt traffic so no one can snoop or tamper…</div>
+        <div class="arrow">→ reach for</div>
+        <div class="pick"><em>TLS</em></div>
+        <div class="ex"><b>Example</b>Any HTTPS website. Any modern API. The bare minimum.</div>
+      </div>
+      <div class="dCard">
+        <div class="if">If the need is <b>mutual certificate-based trust between systems</b> — only my services talk to this API…</div>
+        <div class="arrow">→ reach for</div>
+        <div class="pick"><em>mTLS</em></div>
+        <div class="ex"><b>Example</b>Service-to-service inside a mesh. B2B partner integrations. IoT fleet.</div>
+      </div>
+      <div class="dCard">
+        <div class="if">If the need is <b>identity + delegated API access</b> — a user lets an app act on their behalf, with limited permissions…</div>
+        <div class="arrow">→ reach for</div>
+        <div class="pick"><em>OAuth 2.0 + OIDC</em></div>
+        <div class="ex"><b>Example</b>"Sign in with Google." A SaaS calling your API for the logged-in customer.</div>
+      </div>
+      <div class="dCard">
+        <div class="if">If the need is <b>portable, signed claims in a token</b> — a string that proves things and can be checked offline…</div>
+        <div class="arrow">→ reach for</div>
+        <div class="pick"><em>JWT</em></div>
+        <div class="ex"><b>Example</b>The access &amp; id tokens issued by your Auth Server. Internal service tokens.</div>
+      </div>
+      <div class="dCard">
+        <div class="if">If the need is <b>machine-to-machine API access</b> — no human, just a backend job calling another service…</div>
+        <div class="arrow">→ reach for</div>
+        <div class="pick"><em>OAuth Client Credentials</em></div>
+        <div class="ex"><b>Example</b>A nightly batch job. A microservice calling an internal API.</div>
+      </div>
+      <div class="dCard">
+        <div class="if">If the need is <b>"just tell me who's logged in"</b> for a web/mobile app — no API delegation involved…</div>
+        <div class="arrow">→ reach for</div>
+        <div class="pick"><em>OIDC</em></div>
+        <div class="ex"><b>Example</b>Federated single sign-on. Replacing a custom login screen.</div>
+      </div>
+    </div>
+
+    <div class="miniGloss" style="margin-top:1.7rem">
+      <b>And remember</b>
+      These aren't either/or. A typical modern service is happily running <i>all</i> of them at once:
+      <b style="display:inline;background:none;color:var(--red-deep);text-transform:none;letter-spacing:0;font-family:inherit">TLS</b> for the pipe,
+      <b style="display:inline;background:none;color:var(--red-deep);text-transform:none;letter-spacing:0;font-family:inherit">mTLS</b> for service identity,
+      <b style="display:inline;background:none;color:var(--red-deep);text-transform:none;letter-spacing:0;font-family:inherit">OIDC</b> to log the user in,
+      <b style="display:inline;background:none;color:var(--red-deep);text-transform:none;letter-spacing:0;font-family:inherit">OAuth</b> to delegate API access, and
+      <b style="display:inline;background:none;color:var(--red-deep);text-transform:none;letter-spacing:0;font-family:inherit">JWT</b> as the token format. Different floors, all working together.
+    </div>
+  </div>
+</section>
+
+<!-- ===================== RECAP ===================== -->
+<section id="recap">
+  <div class="wrap">
+    <span class="kicker" style="justify-content:center">The Last Word</span>
+    <p class="recap-line">If you remember one thing: <b>TLS locks the pipe</b>, mTLS makes both sides show ID, and everything else — OAuth, OIDC, JWT — is about <b>who the user is</b> and <b>what they're allowed to do</b> inside that pipe.</p>
+    <ul class="checklist">
+      <li>TLS = the conversation is private &amp; the server is real (one-way)</li>
+      <li>mTLS = both sides prove identity with certificates (two-way)</li>
+      <li>AuthN proves <b>who</b> you are; AuthZ decides <b>what</b> you can do</li>
+      <li>OAuth 2.0 is a delegation protocol — it issues <i>access tokens</i></li>
+      <li>OIDC = OAuth + identity layer — it adds an <i>id token</i> (always a JWT)</li>
+      <li>JWT is a format: header.payload.signature, signed not encrypted</li>
+      <li>Certificates = long-lived machine identity. Tokens = short-lived user/session permissions</li>
+      <li>The migration: keep TLS, often keep mTLS for service identity, add Auth Server + JWTs for user identity &amp; authorization</li>
+    </ul>
+    <footer>The Security Times · An interactive explainer · Built to be tweaked</footer>
+  </div>
+</section>
+
+<script>
+(function(){
+  "use strict";
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var hasGSAP = !!(window.gsap);
+
+  // ---------- progress bar ----------
+  var progress = document.getElementById('progress');
+  function onScroll(){
+    var h = document.documentElement;
+    var s = (h.scrollTop)/(h.scrollHeight - h.clientHeight);
+    progress.style.width = Math.max(0,Math.min(1,s))*100 + '%';
+  }
+  window.addEventListener('scroll', onScroll, {passive:true});
+  onScroll();
+
+  // ---------- active section in nav ----------
+  var secs = Array.prototype.slice.call(document.querySelectorAll('section[id]'));
+  var navLinks = Array.prototype.slice.call(document.querySelectorAll('nav a[data-sec]'));
+  function setActive(){
+    var y = window.scrollY + 90;
+    var current = secs[0].id;
+    secs.forEach(function(s){ if(s.offsetTop <= y) current = s.id; });
+    navLinks.forEach(function(a){
+      var href = a.getAttribute('href').replace('#','');
+      a.classList.toggle('active', href === current);
+    });
+  }
+  window.addEventListener('scroll', setActive, {passive:true});
+  setActive();
+
+  // ---------- dateline ----------
+  try{
+    var d = new Date();
+    var fmt = d.toLocaleDateString(undefined,{weekday:'long', year:'numeric', month:'long', day:'numeric'});
+    document.getElementById('dateline').textContent = fmt;
+  }catch(e){}
+
+  // ====================================================
+  // The Stack — interactive layer info panel
+  // ====================================================
+  var stackData = {
+    transport:{
+      kick:'Floor 5 · Transport / Channel',
+      title:'Is the wire safe?',
+      q:'"Can anyone snoop on or tamper with this conversation?"',
+      body:'This floor doesn\'t care <i>who</i> you are — only that the bytes between two endpoints are <b>private</b>, <b>untampered</b>, and that the server you reached is the one you meant to reach. <b>TLS</b> handles one-way; <b>mTLS</b> handles two-way. Everything else in this paper sits on top.'
+    },
+    authn:{
+      kick:'Floor 4 · Authentication (AuthN)',
+      title:'Who are you?',
+      q:'"Prove you are who you claim to be."',
+      body:'AuthN is identity verification. It can be done with a password + MFA, a client certificate (the mTLS path), a federated login (OIDC), a passkey, or biometrics. The output is always the same: a <b>verified identity</b> that the next floor can act on.'
+    },
+    authz:{
+      kick:'Floor 3 · Authorization (AuthZ)',
+      title:'What can you do?',
+      q:'"You\'re verified — but are you allowed to do this specific thing?"',
+      body:'AuthZ is permission. Even after we know you\'re Jane, we still have to decide: <i>can Jane delete this invoice?</i> This floor uses <b>roles</b>, <b>scopes</b>, <b>attributes</b>, or <b>policies</b>. OAuth scopes live here. So do RBAC, ABAC, and policy engines like OPA or Cedar.'
+    },
+    proto:{
+      kick:'Floor 2 · Protocol / Conversation',
+      title:'How do we talk?',
+      q:'"What\'s the dance — the redirects, codes, exchanges, callbacks?"',
+      body:'<b>OAuth 2.0</b> and <b>OIDC</b> live here. They define <i>how</i> the user, the client app, the Auth Server, and the API talk to each other — the redirects, the codes, the token endpoints. They don\'t define what the tokens look like. That\'s the next floor down.'
+    },
+    token:{
+      kick:'Floor 1 · Token Format',
+      title:'What does the pass actually look like?',
+      q:'"What\'s printed on the paper, and how do we know it\'s real?"',
+      body:'<b>JWT</b> is the most common answer: a string with three Base64-encoded parts, signed so anyone with the right public key can check it. Tokens can also be <b>opaque</b> — just a random ID that the API exchanges for details by calling the Auth Server. Format ≠ protocol.'
+    }
+  };
+
+  var layers = document.querySelectorAll('#layers .layer');
+  var si = {
+    kick:document.getElementById('siKick'),
+    title:document.getElementById('siTitle'),
+    q:document.getElementById('siQ'),
+    body:document.getElementById('siBody')
+  };
+  function selectLayer(id){
+    layers.forEach(function(L){ L.classList.toggle('active', L.dataset.id === id); });
+    var d = stackData[id];
+    if(!d) return;
+    si.kick.textContent = d.kick;
+    si.title.textContent = d.title;
+    si.q.innerHTML = d.q;
+    si.body.innerHTML = d.body;
+  }
+  layers.forEach(function(L){
+    L.addEventListener('click', function(){ selectLayer(L.dataset.id); });
+  });
+  // start with the transport layer selected
+  selectLayer('transport');
+
+  // ====================================================
+  // TLS / mTLS handshake animation — curved numbered arrows in SVG.
+  // Each step draws a new arrow; previous arrows fade to "muted ink".
+  // After the final step, all arrows remain visible alongside the
+  // lit green pipe — until the user clicks Reset.
+  // ====================================================
+  function setupHandshake(opts){
+    var SVG_NS = 'http://www.w3.org/2000/svg';
+    var stage = document.getElementById(opts.stage);
+    var svg = stage.querySelector('svg');
+    var arrowsLayer = svg.querySelector('.hs-arrows');
+    var pipeEnc = svg.querySelector('.hs-pipe-enc');
+    var serverCert = svg.querySelector('.hs-server-cert');
+    var clientCert = svg.querySelector('.hs-client-cert');
+    var step = document.getElementById(opts.step);
+    var playBtn = document.getElementById(opts.play);
+    var resetBtn = document.getElementById(opts.reset);
+
+    // marker IDs are scoped per-instance (so TLS & mTLS don't collide)
+    var AH_INK   = 'url(#ah-ink-'   + opts.idScope + ')';
+    var AH_FAINT = 'url(#ah-faint-' + opts.idScope + ')';
+
+    // pipe coordinates inside the 700x320 viewBox
+    var PIPE_Y     = 160;
+    var PIPE_START = 135;
+    var PIPE_END   = 565;
+    var PIPE_MID   = 350;
+
+    // step definitions
+    var tlsSteps = [
+      { kind:'arc', dir:'right', ctrlY:30,  num:1, label:'ClientHello',
+        caption:'<b>1.</b> ClientHello — "Here are the TLS versions &amp; cipher suites I support."' },
+      { kind:'arc', dir:'left',  ctrlY:290, num:2, label:'ServerHello + 📜',
+        caption:'<b>2.</b> ServerHello + <b>Certificate</b> — server presents its signed cert.',
+        showServerCert:true },
+      { kind:'bi', num:3, label:'Key Exchange',
+        caption:'<b>3.</b> Key Exchange — both sides agree on a shared secret without ever sending it on the wire.' },
+      { kind:'pipe', num:4,
+        caption:'<b>4.</b> ✅ <b>Encrypted channel</b> established. Server verified. Real traffic can now flow.' }
+    ];
+    var mtlsSteps = [
+      { kind:'arc', dir:'right', ctrlY:50,  num:1, label:'ClientHello',
+        caption:'<b>1.</b> ClientHello — "Here are the TLS versions &amp; cipher suites I support."' },
+      { kind:'arc', dir:'left',  ctrlY:280, num:2, label:'ServerHello + 📜 + "send yours"',
+        caption:'<b>2.</b> ServerHello + Certificate + <b>CertificateRequest</b> — server presents its cert and asks the client for one too.',
+        showServerCert:true },
+      { kind:'arc', dir:'right', ctrlY:-20, num:3, label:'Client 📜',
+        caption:'<b>3.</b> <b>Client Certificate</b> — client presents its own cert. Server verifies it.',
+        showClientCert:true },
+      { kind:'bi', num:4, label:'Key Exchange',
+        caption:'<b>4.</b> Key Exchange — both sides agree on a shared secret without ever sending it on the wire.' },
+      { kind:'pipe', num:5,
+        caption:'<b>5.</b> ✅ <b>Mutually authenticated encrypted channel</b> established. Both sides verified.' }
+    ];
+    var steps = opts.mutual ? mtlsSteps : tlsSteps;
+
+    function svgEl(tag, attrs){
+      var e = document.createElementNS(SVG_NS, tag);
+      if(attrs){ for(var k in attrs) e.setAttribute(k, attrs[k]); }
+      return e;
+    }
+
+    function clearStage(){
+      while(arrowsLayer.firstChild) arrowsLayer.removeChild(arrowsLayer.firstChild);
+      pipeEnc.setAttribute('opacity', '0');
+      if(serverCert) serverCert.setAttribute('opacity', '0');
+      if(clientCert) clientCert.setAttribute('opacity', '0');
+      step.innerHTML = 'Ready. Click <b>Play</b>.';
+    }
+
+    // Mark every existing arrow as muted (used at the start of each new step).
+    function muteAllArrows(){
+      var arrows = arrowsLayer.querySelectorAll('.hs-arrow');
+      arrows.forEach(function(a){
+        a.classList.add('muted');
+        var p = a.querySelector('.arrow-path');
+        if(!p) return;
+        if(p.hasAttribute('marker-end'))   p.setAttribute('marker-end',   AH_FAINT);
+        if(p.hasAttribute('marker-start')) p.setAttribute('marker-start', AH_FAINT);
+      });
+    }
+
+    // Build an arrow group (path + numbered badge + label pill) for a step.
+    // Returns { g, path, labelEls } so the caller can animate it.
+    function buildArrow(s){
+      var g = svgEl('g', {class:'hs-arrow'});
+      var path = svgEl('path', {class:'arrow-path', fill:'none'});
+      var apexX, apexY;
+
+      if(s.kind === 'arc'){
+        var sx = s.dir === 'right' ? PIPE_START : PIPE_END;
+        var ex = s.dir === 'right' ? PIPE_END   : PIPE_START;
+        // Quadratic Bezier; apex Y is midway between PIPE_Y and ctrlY.
+        path.setAttribute('d', 'M '+sx+' '+PIPE_Y+' Q '+PIPE_MID+' '+s.ctrlY+' '+ex+' '+PIPE_Y);
+        path.setAttribute('marker-end', AH_INK);
+        apexX = PIPE_MID;
+        apexY = (PIPE_Y + s.ctrlY) / 2;
+      } else if(s.kind === 'bi'){
+        // Short straight bidirectional arrow sitting above the pipe.
+        var y = PIPE_Y - 32;
+        path.setAttribute('d', 'M 245 '+y+' L 455 '+y);
+        path.setAttribute('marker-start', AH_INK);
+        path.setAttribute('marker-end',   AH_INK);
+        apexX = PIPE_MID;
+        apexY = y - 22;
+      } else {
+        return null;
+      }
+      g.appendChild(path);
+
+      // Label pill + numbered badge, centered at (apexX, apexY).
+      var labelText = s.label || '';
+      var labelW = Math.max(70, labelText.length * 6.8 + 18);
+      var labelH = 22;
+      var badgeR = 11;
+      var gap = 5;
+      var totalW = badgeR * 2 + gap + labelW;
+      var leftX = apexX - totalW / 2;
+      var badgeCx = leftX + badgeR;
+      var lblCx = badgeCx + badgeR + gap + labelW / 2;
+
+      var labelBg = svgEl('rect', {class:'label-bg', x:lblCx - labelW/2, y:apexY - labelH/2, width:labelW, height:labelH, rx:5});
+      g.appendChild(labelBg);
+      var labelTxt = svgEl('text', {class:'label-text', x:lblCx, y:apexY + 4});
+      labelTxt.textContent = labelText;
+      g.appendChild(labelTxt);
+
+      var badgeBg = svgEl('circle', {class:'badge-bg', cx:badgeCx, cy:apexY, r:badgeR});
+      g.appendChild(badgeBg);
+      var badgeTxt = svgEl('text', {class:'badge-text', x:badgeCx, y:apexY + 5});
+      badgeTxt.textContent = s.num;
+      g.appendChild(badgeTxt);
+
+      return { g:g, path:path, labelEls:[labelBg, labelTxt, badgeBg, badgeTxt] };
+    }
+
+    function animateStep(s){
+      return new Promise(function(resolve){
+        muteAllArrows();
+        step.innerHTML = s.caption;
+
+        if(s.showServerCert && serverCert){
+          if(hasGSAP && !reduce){
+            gsap.fromTo(serverCert, {opacity:0}, {opacity:1, duration:.4, ease:'back.out(2)'});
+          } else { serverCert.setAttribute('opacity', '1'); }
+        }
+        if(s.showClientCert && clientCert){
+          if(hasGSAP && !reduce){
+            gsap.fromTo(clientCert, {opacity:0}, {opacity:1, duration:.4, ease:'back.out(2)'});
+          } else { clientCert.setAttribute('opacity', '1'); }
+        }
+
+        if(s.kind === 'pipe'){
+          // No new arrow — just light up the encrypted pipe.
+          if(hasGSAP && !reduce){
+            gsap.fromTo(pipeEnc, {opacity:0}, {opacity:1, duration:.7, ease:'power2.out', onComplete:resolve});
+          } else {
+            pipeEnc.setAttribute('opacity', '1');
+            resolve();
+          }
+          return;
+        }
+
+        var arrow = buildArrow(s);
+        if(!arrow){ resolve(); return; }
+        arrowsLayer.appendChild(arrow.g);
+
+        if(hasGSAP && !reduce){
+          var len = arrow.path.getTotalLength();
+          arrow.path.style.strokeDasharray = len;
+          arrow.path.style.strokeDashoffset = len;
+          arrow.labelEls.forEach(function(e){ e.style.opacity = '0'; });
+          gsap.to(arrow.path, {strokeDashoffset:0, duration:.85, ease:'power2.inOut'});
+          gsap.to(arrow.labelEls, {opacity:1, duration:.3, delay:.55, onComplete:resolve});
+        } else {
+          // no animation — just draw it fully visible
+          resolve();
+        }
+      });
+    }
+
+    async function play(){
+      clearStage();
+      playBtn.disabled = true;
+      try{
+        for(var i = 0; i < steps.length; i++){
+          await animateStep(steps[i]);
+          if(i < steps.length - 1){
+            await new Promise(function(r){ setTimeout(r, (hasGSAP && !reduce) ? 500 : 0); });
+          }
+        }
+      } finally {
+        playBtn.disabled = false;
+      }
+    }
+
+    playBtn.addEventListener('click', play);
+    resetBtn.addEventListener('click', clearStage);
+    clearStage();
+  }
+
+  setupHandshake({
+    stage:'tlsStage', step:'tlsStep',
+    play:'tlsPlay', reset:'tlsReset',
+    idScope:'tls', mutual:false
+  });
+  setupHandshake({
+    stage:'mtlsStage', step:'mtlsStep',
+    play:'mtlsPlay', reset:'mtlsReset',
+    idScope:'mtls', mutual:true
+  });
+
+  // ====================================================
+  // OAuth flow animation
+  // ====================================================
+  (function(){
+    var steps = document.querySelectorAll('#oflow .ostep');
+    var stage = document.getElementById('oauthStage');
+    var stepInfo = document.getElementById('oauthStep');
+    var playBtn = document.getElementById('oauthPlay');
+    var resetBtn = document.getElementById('oauthReset');
+
+    function center(el){
+      var r = el.getBoundingClientRect();
+      var s = stage.getBoundingClientRect();
+      return { x: r.left - s.left + r.width/2, y: r.top - s.top + r.height/2 };
+    }
+
+    function makePacket(text, cls){
+      var p = document.createElement('div');
+      p.className = 'ofPacket ' + (cls||'');
+      p.textContent = text;
+      stage.appendChild(p);
+      return p;
+    }
+
+    function reset(){
+      steps.forEach(function(s){ s.classList.remove('active'); });
+      stage.querySelectorAll('.ofPacket').forEach(function(p){ p.remove(); });
+      stepInfo.innerHTML = 'Ready. Six steps total.';
+    }
+
+    function activate(n){
+      steps.forEach(function(s){ s.classList.toggle('active', parseInt(s.dataset.step,10) === n); });
+    }
+
+    function flyPacket(text, cls, fromEl, toEl, dur){
+      return new Promise(function(resolve){
+        var p = makePacket(text, cls);
+        var a = center(fromEl), b = center(toEl);
+        if(hasGSAP && !reduce){
+          gsap.set(p,{left:a.x, top:a.y, x:'-50%', y:'-50%', opacity:0, scale:.6});
+          gsap.to(p,{opacity:1, scale:1, duration:.25});
+          gsap.to(p,{left:b.x, top:b.y, duration:dur||1.2, ease:'power2.inOut', onComplete:function(){
+            gsap.to(p,{opacity:0, duration:.3, onComplete:function(){ p.remove(); resolve(); }});
+          }});
+        }else{
+          p.style.left = b.x+'px'; p.style.top = b.y+'px'; p.style.opacity=1;
+          setTimeout(function(){ p.remove(); resolve(); }, 500);
+        }
+      });
+    }
+
+    function wait(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
+
+    async function play(){
+      reset();
+      var U = document.getElementById('oa-user');
+      var C = document.getElementById('oa-client');
+      var A = document.getElementById('oa-auth');
+      var R = document.getElementById('oa-api');
+
+      activate(1);
+      stepInfo.innerHTML = '<b>1.</b> User opens the client app.';
+      await flyPacket('open app', 'code', U, C, 1.0);
+      await wait(200);
+
+      activate(2);
+      stepInfo.innerHTML = '<b>2.</b> Client redirects user to the Auth Server.';
+      await flyPacket('login request', 'code', C, A, 1.2);
+      await wait(200);
+
+      activate(3);
+      stepInfo.innerHTML = '<b>3.</b> User logs in directly with the Auth Server. The client never sees the password.';
+      await flyPacket('username + MFA', 'code', U, A, 1.2);
+      await wait(200);
+
+      activate(4);
+      stepInfo.innerHTML = '<b>4.</b> Auth Server gives the client a one-time <b>authorization code</b>.';
+      await flyPacket('auth code', 'code', A, C, 1.2);
+      await wait(200);
+
+      activate(5);
+      stepInfo.innerHTML = '<b>5.</b> Client trades the code for an <b>access token</b> (and refresh token).';
+      await flyPacket('access token', 'token', A, C, 1.2);
+      await wait(200);
+
+      activate(6);
+      stepInfo.innerHTML = '<b>6.</b> Client calls the API with <code>Authorization: Bearer &lt;token&gt;</code>.';
+      await flyPacket('Bearer token', 'token', C, R, 1.4);
+      await wait(200);
+
+      stepInfo.innerHTML = '✅ <b>Done.</b> The API verified the token and returned data — and the client never touched the password.';
+    }
+
+    playBtn.addEventListener('click', play);
+    resetBtn.addEventListener('click', reset);
+  })();
+
+  // ====================================================
+  // JWT — toggle highlight when clicking parts
+  // ====================================================
+  (function(){
+    var jrow = document.getElementById('jwtRow');
+    var parts = document.querySelectorAll('.jpart');
+    jrow.querySelectorAll('.jp').forEach(function(el){
+      el.addEventListener('mouseenter', function(){
+        var key = el.dataset.part;
+        parts.forEach(function(p){
+          p.style.outline = p.classList.contains(key) ? '3px solid var(--ink)' : 'none';
+        });
+      });
+      el.addEventListener('mouseleave', function(){
+        parts.forEach(function(p){ p.style.outline = 'none'; });
+      });
+    });
+  })();
+
+  // ====================================================
+  // Migration — toggle + SVG renderer
+  // ====================================================
+  (function(){
+    var svg = document.getElementById('migSVG');
+    var toggle = document.getElementById('migToggle');
+    var stOff = document.getElementById('migOff');
+    var stOn = document.getElementById('migOn');
+    var cap = document.getElementById('migCaption');
+    var modern = false;
+
+    var SVGNS = 'http://www.w3.org/2000/svg';
+    function el(tag, attrs){
+      var e = document.createElementNS(SVGNS, tag);
+      for(var k in attrs){ e.setAttribute(k, attrs[k]); }
+      return e;
+    }
+    function txt(x,y,t,attrs){
+      var e = el('text',Object.assign({x:x,y:y,'text-anchor':'middle','font-family':'Space Mono, monospace','font-size':12, 'font-weight':700, fill:'#211a12'}, attrs||{}));
+      e.textContent = t;
+      return e;
+    }
+    function box(x,y,w,h,fill,stroke){
+      return el('rect',{x:x,y:y,width:w,height:h,rx:8,ry:8,fill:fill||'#ece0c8',stroke:stroke||'#211a12','stroke-width':2.5});
+    }
+    function dashedLine(x1,y1,x2,y2,color){
+      return el('line',{x1:x1,y1:y1,x2:x2,y2:y2,stroke:color||'#211a12','stroke-width':2.5,'stroke-dasharray':'6,5'});
+    }
+    function solidLine(x1,y1,x2,y2,color,width){
+      return el('line',{x1:x1,y1:y1,x2:x2,y2:y2,stroke:color||'#211a12','stroke-width':width||2.5});
+    }
+
+    function clear(){ while(svg.firstChild) svg.removeChild(svg.firstChild); }
+
+    function drawOld(){
+      clear();
+      // Internal CA at top
+      var ca = el('g',{});
+      ca.appendChild(box(330,18,120,46,'#f3e1c2'));
+      ca.appendChild(txt(390,40,'Internal CA',{'font-size':13}));
+      ca.appendChild(txt(390,56,'(issues all certs)',{'font-size':10,'font-weight':400,'font-style':'italic',fill:'#4a3f30'}));
+      svg.appendChild(ca);
+
+      // 3 services in a row
+      var svcs = [
+        {x:80,  y:200, name:'service-a'},
+        {x:330, y:200, name:'service-b'},
+        {x:580, y:200, name:'service-c'}
+      ];
+      svcs.forEach(function(s){
+        var g = el('g',{});
+        g.appendChild(box(s.x, s.y, 120, 70, '#ece0c8'));
+        g.appendChild(txt(s.x+60, s.y+28, s.name,{'font-size':13}));
+        // cert badge
+        g.appendChild(box(s.x+90, s.y-10, 24, 30, '#e7a52f'));
+        g.appendChild(txt(s.x+102, s.y+10,'📜',{'font-size':14,'font-weight':400}));
+        g.appendChild(txt(s.x+60, s.y+50,'mTLS cert',{'font-size':10,'font-style':'italic',fill:'#4a3f30','font-weight':400}));
+        svg.appendChild(g);
+      });
+
+      // dashed cert-issuance lines from CA to each service
+      svcs.forEach(function(s){
+        svg.appendChild(dashedLine(390, 64, s.x+60, s.y, '#8a7a60'));
+      });
+
+      // mTLS connections between every pair (mesh)
+      var conns = [
+        [svcs[0], svcs[1]],
+        [svcs[1], svcs[2]],
+        [svcs[0], svcs[2]]
+      ];
+      conns.forEach(function(c){
+        var x1 = c[0].x+120, y1 = c[0].y+35;
+        var x2 = c[1].x, y2 = c[1].y+35;
+        // arched line
+        var midX = (x1+x2)/2;
+        var midY = (y1+y2)/2 + (c[0]===svcs[0] && c[1]===svcs[2] ? 45 : 0);
+        var path = el('path',{
+          d:'M '+x1+' '+y1+' Q '+midX+' '+midY+' '+x2+' '+y2,
+          fill:'none', stroke:'#136f63','stroke-width':3
+        });
+        svg.appendChild(path);
+        // label
+        var lbl = txt(midX, midY-6, 'mTLS', {'font-size':10, fill:'#136f63'});
+        svg.appendChild(lbl);
+      });
+
+      // No user identity flag
+      var warn = el('g',{});
+      warn.appendChild(box(280,300,220,46,'#f7d2cb','#a82a17'));
+      warn.appendChild(txt(390,322,'❓ No user identity in calls',{'font-size':12,fill:'#a82a17'}));
+      warn.appendChild(txt(390,338,'(only "which service called")',{'font-size':10,'font-style':'italic','font-weight':400,fill:'#4a3f30'}));
+      svg.appendChild(warn);
+    }
+
+    function drawModern(){
+      clear();
+
+      // Auth Server at top
+      var au = el('g',{});
+      au.appendChild(box(310,18,160,52,'#f7e6c3'));
+      au.appendChild(txt(390,40,'Auth Server',{'font-size':14}));
+      au.appendChild(txt(390,57,'(issues JWTs)',{'font-size':10,'font-weight':400,'font-style':'italic',fill:'#4a3f30'}));
+      svg.appendChild(au);
+
+      // User on the left
+      var user = el('g',{});
+      user.appendChild(box(20,110,90,50,'#dde6ef'));
+      user.appendChild(txt(65,135,'🧑 User',{'font-size':13,'font-weight':400}));
+      user.appendChild(txt(65,152,'logs in',{'font-size':10,'font-style':'italic','font-weight':400,fill:'#4a3f30'}));
+      svg.appendChild(user);
+
+      // Login arrow to Auth Server
+      svg.appendChild(solidLine(110,130,310,55,'#2a5d8f',2.5));
+      svg.appendChild(txt(220,90,'login (OIDC)',{'font-size':10,fill:'#2a5d8f'}));
+
+      // Token down to user
+      svg.appendChild(solidLine(310,65,110,140,'#136f63',2.5));
+      svg.appendChild(txt(220,108,'+ JWT',{'font-size':10,fill:'#136f63'}));
+
+      // 3 services
+      var svcs = [
+        {x:160, y:230, name:'service-a'},
+        {x:330, y:230, name:'service-b'},
+        {x:500, y:230, name:'service-c'}
+      ];
+      svcs.forEach(function(s){
+        var g = el('g',{});
+        g.appendChild(box(s.x, s.y, 110, 60, '#dce8de'));
+        g.appendChild(txt(s.x+55, s.y+25, s.name,{'font-size':12}));
+        g.appendChild(txt(s.x+55, s.y+44,'verifies JWT',{'font-size':9,'font-style':'italic','font-weight':400,fill:'#4a3f30'}));
+        svg.appendChild(g);
+      });
+
+      // User calls service-a with JWT
+      var jwtPath = el('path',{
+        d:'M 65 160 Q 65 230 160 250',
+        fill:'none', stroke:'#136f63','stroke-width':3
+      });
+      svg.appendChild(jwtPath);
+
+      // Token icon traveling
+      var tok = box(95,195,30,20,'#136f63','#211a12');
+      tok.setAttribute('rx',4);
+      svg.appendChild(tok);
+      svg.appendChild(txt(110,210,'JWT',{'font-size':9,fill:'#f3e9d6'}));
+
+      // Chained calls between services — propagating the JWT
+      function chain(x1,y1,x2,y2){
+        svg.appendChild(solidLine(x1,y1,x2,y2,'#136f63',2.5));
+      }
+      chain(270,260, 330,260);
+      chain(440,260, 500,260);
+      // little JWT labels
+      svg.appendChild(txt(300,254,'JWT',{'font-size':9,fill:'#136f63'}));
+      svg.appendChild(txt(470,254,'JWT',{'font-size':9,fill:'#136f63'}));
+
+      // Trust line down from Auth Server to all services (public keys)
+      svg.appendChild(dashedLine(390,70, 215,230,'#8a7a60'));
+      svg.appendChild(dashedLine(390,70, 385,230,'#8a7a60'));
+      svg.appendChild(dashedLine(390,70, 555,230,'#8a7a60'));
+      svg.appendChild(txt(610,170,'public keys',{'font-size':9,'font-style':'italic','font-weight':400,fill:'#8a7a60'}));
+      svg.appendChild(txt(610,184,'for verification',{'font-size':9,'font-style':'italic','font-weight':400,fill:'#8a7a60'}));
+
+      // Good flag
+      var ok = el('g',{});
+      ok.appendChild(box(260,310,260,42,'#dce8de','#0d5048'));
+      ok.appendChild(txt(390,330,'✓ User identity + scopes in every call',{'font-size':12,fill:'#0d5048'}));
+      ok.appendChild(txt(390,346,'(JWT verified independently by each service)',{'font-size':9,'font-style':'italic','font-weight':400,fill:'#4a3f30'}));
+      svg.appendChild(ok);
+    }
+
+    function setView(){
+      if(modern){
+        drawModern();
+        toggle.classList.add('on');
+        toggle.querySelector('.knob').textContent = '→';
+        stOff.classList.add('dim'); stOn.classList.remove('dim');
+        cap.innerHTML = '<b>Modern pattern.</b> User logs in via the Auth Server, which issues a signed <b>JWT</b>. The token carries user identity and scopes, and every service can verify it <i>independently</i> using the Auth Server\'s public keys — no synchronous "who is this?" call needed. TLS still encrypts the pipe; mTLS may still sit underneath for service identity.';
+      }else{
+        drawOld();
+        toggle.classList.remove('on');
+        toggle.querySelector('.knob').textContent = '←';
+        stOff.classList.remove('dim'); stOn.classList.add('dim');
+        cap.innerHTML = '<b>Old pattern.</b> Every service has its own cert from an internal CA. mTLS proves <i>"this is service-a calling service-b"</i> — but nothing in the call tells service-b <i>which user</i> service-a is acting for, or what that user is allowed to do.';
+      }
+    }
+
+    toggle.addEventListener('click', function(){ modern = !modern; setView(); });
+    toggle.addEventListener('keydown', function(e){
+      if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); modern = !modern; setView(); }
+    });
+    setView();
+  })();
+
+  // ====================================================
+  // Reveal on scroll (optional, no-op if no GSAP)
+  // ====================================================
+  if(hasGSAP && !reduce){
+    if(window.ScrollTrigger){ gsap.registerPlugin(ScrollTrigger); }
+    document.querySelectorAll('section .head, section .lede, section .panel, section .door, section .jpart, section .dCard, section .ctCol, section .migCol, section .layer').forEach(function(el){
+      gsap.from(el,{opacity:0, y:18, duration:.55, ease:'power2.out', scrollTrigger:{trigger:el, start:'top 90%'}});
+    });
+  }
+})();
+</script>
+</body>
+</html>
