@@ -119,6 +119,15 @@
   .skip-btn:hover{color:var(--ink);border-color:var(--ink);background:var(--paper-2)}
   h2.head{font-family:'Fraunces',serif;font-weight:900;font-size:clamp(2rem,6vw,3.6rem);line-height:1.02;letter-spacing:-.025em;margin-bottom:1rem}
   .lede{font-size:clamp(1.05rem,2.4vw,1.3rem);color:var(--ink-soft);max-width:62ch;margin-bottom:2.5rem}
+  .bridge{
+    font-family:'Newsreader',Georgia,serif;
+    font-style:italic;
+    color:var(--ink-soft);
+    font-size:1.02rem;
+    line-height:1.55;
+    margin:1.1rem 0 1.4rem;
+    max-width:62ch;
+  }
 
   /* ---------- hero / masthead ---------- */
   #hero{padding-top:clamp(2rem,5vw,4rem);text-align:center;border-bottom:2px solid var(--ink)}
@@ -524,6 +533,8 @@
     <div class="masthead-sub">From Locked Pipes to Trusted Tokens · TLS · mTLS · OAuth · OIDC · JWT</div>
     <p class="origin-line">An interactive explainer for engineers, managers, and anyone who's tired of nodding politely when the security team starts talking.</p>
 
+    <p class="bridge">Security is a stack, not a list. The reason the words get tangled — TLS, mTLS, OAuth, OIDC, JWT — is that people compare things that don't live on the same floor. The front-door lock doesn't compete with the bouncer; the bouncer doesn't compete with the printing room downstairs that makes the IDs. This page is a tour of the building, top floor to bottom.</p>
+
     <p class="tldr">
       <b>TLS</b> locks the pipe. <b>mTLS</b> makes both sides flash an ID badge.
       <b>OAuth</b> hands out short-lived passes that say <b>"what you're allowed to do."</b>
@@ -626,6 +637,8 @@
   <div class="wrap">
     <span class="kicker">Floor 5 · Channel security</span>
     <h2 class="head">TLS — the sealed envelope</h2>
+    <p class="bridge">The top floor of the stack — the one that actually touches the wire. Everything below assumes this works; without it, the rest of the building is a pile of unlocked offices.</p>
+
     <p class="lede">
       <b>Transport Layer Security</b> turns a plain conversation between two computers into a sealed,
       tamper-evident envelope. Anything written inside is unreadable to anyone watching the wire —
@@ -700,6 +713,8 @@
         <li>In modern TLS 1.3 this happens in a single round trip. The client never sent a certificate of its own — the server doesn't know <i>who</i> you are, only that the channel is secure.</li>
       </ul>
     </details>
+
+    <p class="bridge">That's the channel with only the server presenting ID. Next door — still on this floor — there's a version where the client presents ID too. That's mTLS.</p>
   </div>
 </section>
 
@@ -708,6 +723,8 @@
   <div class="wrap">
     <span class="kicker">Floor 5 · Mutual channel security</span>
     <h2 class="head">mTLS — both sides flash a badge</h2>
+    <p class="bridge">Still on Floor 5 — same wire, same envelope — with one extra step.</p>
+
     <p class="lede">
       In regular TLS only the <i>server</i> proves who it is. <b>mTLS (Mutual TLS)</b> adds one more
       step: the <i>client</i> also presents a certificate, and the server checks it before letting the conversation continue.
@@ -801,6 +818,8 @@
     conversation continue. Two forms because both turn up in the wild:
     separate cert + key (Unix convention) and a single password-protected
     bundle (Java / Windows convention).</p>
+
+    <p class="bridge">That's Floor 5 done. The channel is secure and both sides have identified themselves — at the machine level. But "which machine called us" isn't the same as "which person is acting through this call." For that, we head down two floors. Floor 4 and Floor 3.</p>
   </div>
 </section>
 
@@ -849,6 +868,8 @@
   <div class="wrap">
     <span class="kicker">Floors 4 &amp; 3 · Identity vs permission</span>
     <h2 class="head">AuthN vs AuthZ — the bouncer at the door</h2>
+    <p class="bridge">Two floors at once — because one character does the work on both.</p>
+
     <p class="lede">
       Two different jobs that get confused all the time. A nightclub bouncer does both, but in order.
       <b>First</b> they check who you are. <b>Then</b> they check what wristband you're wearing.
@@ -889,6 +910,8 @@
       <b style="display:inline;background:none;color:var(--red-deep);text-transform:none;letter-spacing:0;font-family:inherit">OAuth 2.0 was designed for AuthZ — not AuthN.</b>
       People kept misusing it for "log in with X", which is why <b style="display:inline;background:none;color:var(--red-deep);text-transform:none;letter-spacing:0;font-family:inherit">OIDC</b> was created — to put a proper AuthN layer on top.
     </div>
+
+    <p class="bridge">Identity and permission, both handled. But how do those checks actually happen — between a user, an app they trust, and an API the app wants to reach? For that, we head down one more floor — to Floor 2, where the conversation itself lives.</p>
   </div>
 </section>
 
@@ -897,6 +920,8 @@
   <div class="wrap">
     <span class="kicker">Floor 2 · The delegation protocol</span>
     <h2 class="head">OAuth 2.0 — the valet key</h2>
+    <p class="bridge">Floor 2 is the meeting room. The actors from the floors above — user, identity, permission — come here to figure out who's letting whom do what, without anyone trading passwords.</p>
+
     <p class="lede">
       You drive up to a hotel. You don't hand the valet the deed to your car — you hand them a
       <i>valet key</i>: starts the engine, opens the doors, but won't open the glovebox and stops working
@@ -964,6 +989,8 @@
         <li><b>Implicit (legacy)</b> — superseded by Auth Code + PKCE. Don't use for new things.</li>
       </ul>
     </details>
+
+    <p class="bridge">That's OAuth — delegation handled. But the valet doesn't know your name; the hotel just trusts the system. If the app on the other end needs to actually know who you are, you need a second pass that says it. That's OIDC.</p>
   </div>
 </section>
 
@@ -1006,6 +1033,8 @@
       OAuth + OIDC = <i>"this app can do X for you, AND here's a signed receipt saying it was definitely <b style="display:inline;background:none;color:var(--red-deep);text-transform:none;letter-spacing:0;font-family:inherit">you</b> who logged in."</i>
       Almost every "Sign in with Google / GitHub / Microsoft" button in the world is OIDC under the hood.
     </div>
+
+    <p class="bridge">Two tokens, one login. We've now mentioned half a dozen tokens in passing — access, id, refresh — but never looked at what one actually is. That's the ground floor. Floor 1, where the tokens are printed.</p>
   </div>
 </section>
 
@@ -1015,6 +1044,8 @@
     <span class="kicker">Floor 1 · The token format</span>
     <h2 class="head">JWT — the paper the passes are printed on</h2>
     <span class="trythis">▶ Interactive</span>
+    <p class="bridge">The ground floor. Bottom of the stack — where the abstractions stop being abstract. A token down here isn't a concept; it's a string you can paste into a terminal.</p>
+
     <p class="lede">
       A <b>JSON Web Token</b> is a format, not a protocol. Three Base64-encoded chunks joined by dots:
       <code>header.payload.signature</code>. Tap any chunk to see what's inside.
@@ -1091,6 +1122,8 @@
         <li>OIDC's <b>id_token</b> is <b>always</b> a JWT. OAuth's <b>access_token</b> is <b>often</b> a JWT but is allowed to be anything (e.g. an opaque random string the API looks up via <i>introspection</i>).</li>
       </ul>
     </details>
+
+    <p class="bridge">Bottom of the building. That's all five floors — from the wire up top, through identity and permission in the middle, the protocol one floor up, to the paper here at the ground. What's left on this page is using them: when to reach for which, and how the world is migrating from a single-floor approach to a building that uses all five.</p>
   </div>
 </section>
 
@@ -1259,6 +1292,7 @@
 <section id="recap">
   <div class="wrap">
     <span class="kicker" style="justify-content:center">The Last Word</span>
+    <p class="bridge">Five floors, one building.</p>
     <p class="recap-line">If you remember one thing: <b>TLS locks the pipe</b>, mTLS makes both sides show ID, and everything else — OAuth, OIDC, JWT — is about <b>who the user is</b> and <b>what they're allowed to do</b> inside that pipe.</p>
     <ul class="checklist">
       <li>TLS = the conversation is private &amp; the server is real (one-way)</li>
