@@ -279,6 +279,55 @@
   .schema b{color:var(--ink)}
   .schema .sx{font-size:1.5rem;line-height:1}
 
+  /* ---------- terminal code block ---------- */
+  .terminal{
+    margin:1.6rem 0;
+    border:2px solid var(--ink);
+    border-radius:8px;
+    background:#1a1410;
+    box-shadow:5px 5px 0 var(--line);
+    overflow:hidden;
+    position:relative;
+  }
+  .terminal-bar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:.55rem .9rem;
+    background:#241c14;
+    border-bottom:1px solid #3a2e22;
+  }
+  .terminal-bar .label{
+    font-family:'Space Mono',monospace;font-size:.62rem;
+    letter-spacing:.14em;text-transform:uppercase;
+    color:#a89878;
+  }
+  .terminal-bar .copy{
+    font-family:'Space Mono',monospace;font-size:.6rem;
+    letter-spacing:.1em;text-transform:uppercase;
+    color:#cdbd9d;background:transparent;
+    border:1.5px solid #4a3a28;border-radius:4px;
+    padding:.18rem .5rem;cursor:pointer;
+    transition:color .15s,border-color .15s,background .15s;
+  }
+  .terminal-bar .copy:hover{color:#fff;border-color:#7a6a4f;background:#3a2e22}
+  .terminal-bar .copy.copied{color:#9fcf8f;border-color:#9fcf8f}
+  .terminal pre{
+    margin:0;padding:1.1rem 1.2rem;
+    font-family:'Space Mono',monospace;font-size:.86rem;
+    line-height:1.65;
+    color:#f3e9d6;
+    overflow-x:auto;
+    white-space:pre;
+  }
+  .terminal pre .c{color:#a89878;font-style:italic}
+  .terminal pre .k{color:#e7a52f}
+  .terminal pre .f{color:#f3e9d6;opacity:.85}
+
+  .terminal-caption{
+    font-family:'Newsreader',Georgia,serif;font-style:italic;
+    color:var(--ink-soft);font-size:.95rem;
+    margin:.7rem .2rem 0;line-height:1.5;
+  }
+
   /* ---------- limits / op-ed ---------- */
   .oped-note{font-family:'Space Mono',monospace;font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--red-deep);text-align:center;margin-bottom:1rem}
 
@@ -437,6 +486,26 @@
         <p>Each piece of Kafka has a simple real-world twin. Start with the <b>Producer</b> at the top and work your way down to the <b>Consumer</b>.</p>
       </div>
     </div>
+
+    <div class="terminal" role="region" aria-label="Kafka command-line example">
+      <div class="terminal-bar">
+        <span class="label">▶ At the terminal</span>
+        <button class="copy" type="button" data-copy-target="kafka-cli">Copy</button>
+      </div>
+      <pre id="kafka-cli"><span class="c"># Producer: file a story</span>
+<span class="k">kafka-console-producer.sh</span> <span class="f">\</span>
+  <span class="f">--bootstrap-server</span> localhost:9092 <span class="f">\</span>
+  <span class="f">--topic</span> orders
+
+<span class="c"># Consumer: subscribe to the topic and read from the beginning</span>
+<span class="k">kafka-console-consumer.sh</span> <span class="f">\</span>
+  <span class="f">--bootstrap-server</span> localhost:9092 <span class="f">\</span>
+  <span class="f">--topic</span> orders <span class="f">\</span>
+  <span class="f">--from-beginning</span></pre>
+    </div>
+    <p class="terminal-caption">The two halves of the depot, on the command line.
+    The producer files a story; the consumer subscribes and can scroll back through
+    every story ever filed.</p>
   </div>
 </section>
 
@@ -872,6 +941,38 @@
     gsap.from('#hero .tldr',{opacity:0,y:18,duration:.7,delay:.2,ease:'power2.out'});
     gsap.from('#hero .machine',{opacity:0,scale:.94,duration:.7,delay:.35,ease:'power2.out'});
   }
+
+  /* ===== copy-to-clipboard for .terminal blocks ===== */
+  document.querySelectorAll('.terminal .copy').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var targetId = btn.getAttribute('data-copy-target');
+      var pre = document.getElementById(targetId);
+      if(!pre) return;
+      var text = pre.innerText;
+      var done = function(){
+        var original = btn.textContent;
+        btn.textContent = 'Copied';
+        btn.classList.add('copied');
+        setTimeout(function(){
+          btn.textContent = original;
+          btn.classList.remove('copied');
+        }, 1400);
+      };
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(done).catch(function(){
+          var r = document.createRange();
+          r.selectNodeContents(pre);
+          var s = window.getSelection();
+          s.removeAllRanges(); s.addRange(r);
+        });
+      } else {
+        var r = document.createRange();
+        r.selectNodeContents(pre);
+        var s = window.getSelection();
+        s.removeAllRanges(); s.addRange(r);
+      }
+    });
+  });
 })();
 </script>
 <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "88acd29ff3754619b75a70f403821270"}'></script><!-- End Cloudflare Web Analytics -->
