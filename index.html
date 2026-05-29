@@ -51,7 +51,7 @@
   /* ===== editions — three distinct cards, each in its own theme ===== */
   .editions{
     display:grid;grid-template-columns:1fr;
-    gap:clamp(1.1rem,2.5vw,1.6rem);
+    gap:clamp(2.2rem,3.5vw,2.8rem);
     margin:clamp(1.8rem,4vw,2.6rem) 0 clamp(2.6rem,5vw,3.6rem);
   }
   @media(min-width:780px){.editions{grid-template-columns:repeat(3,1fr)}}
@@ -60,25 +60,48 @@
     /* per-card theme tokens — overridden by .kafka / .certs / .security below */
     --accent:#7c2a38;--card-bg:#f6eeda;--card-ink:#1f1b14;--card-soft:#4d4534;
     --card-faint:#8a7d61;--card-border:#d8c7a3;--chip-bg:rgba(31,27,20,.06);
-    position:relative;isolation:isolate;overflow:hidden;
+    position:relative;isolation:isolate;overflow:visible;
     display:flex;flex-direction:column;
     padding:clamp(1.5rem,3.2vw,2rem) clamp(1.2rem,2.6vw,1.7rem) clamp(1.3rem,3vw,1.7rem);
     text-decoration:none;color:var(--card-ink);
     background:var(--card-bg);
     border:1.5px solid var(--card-border);border-radius:9px;
     box-shadow:0 1px 0 rgba(255,255,255,.45) inset, 0 12px 26px -16px rgba(33,26,18,.45);
-    transition:transform .3s cubic-bezier(.2,.7,.2,1), box-shadow .3s;
+    transform-origin:bottom center;
+    transition:transform .28s cubic-bezier(.2,.7,.2,1),
+              box-shadow .28s cubic-bezier(.2,.7,.2,1);
   }
+  /* rest tilts */
+  .editions .edition:nth-child(1){transform:rotate(-1.3deg)}
+  .editions .edition:nth-child(2){transform:rotate(.4deg)}
+  .editions .edition:nth-child(3){transform:rotate(1.2deg)}
   /* top identity stripe */
   .edition::before{content:"";position:absolute;top:0;left:0;right:0;height:5px;background:var(--accent);z-index:2}
-  .edition:hover{transform:translateY(-7px);box-shadow:0 1px 0 rgba(255,255,255,.45) inset, 0 24px 42px -18px rgba(33,26,18,.55)}
+  /* fold crease */
+  .fold{position:absolute;top:0;bottom:0;left:50%;width:24px;transform:translateX(-50%);pointer-events:none;opacity:.7;z-index:3;
+    background:linear-gradient(90deg,transparent,rgba(33,26,18,.07) 45%,rgba(255,255,255,.18) 50%,rgba(33,26,18,.07) 55%,transparent)}
+  /* shelf shadow */
+  .shelf-shadow{position:absolute;left:9%;right:9%;bottom:-22px;height:14px;border-radius:50%;z-index:-1;filter:blur(2px);pointer-events:none;
+    background:radial-gradient(ellipse at center,rgba(33,26,18,.30),transparent 72%);transition:all .28s cubic-bezier(.2,.7,.2,1)}
+  /* hover / focus lift */
+  .edition:hover,.edition:focus-within{
+    transform:rotate(0deg) translateY(-16px);z-index:5;
+    box-shadow:0 1px 0 rgba(255,255,255,.45) inset, 0 28px 46px -18px rgba(33,26,18,.55);
+  }
+  .edition:hover .shelf-shadow,.edition:focus-within .shelf-shadow{
+    left:3%;right:3%;bottom:-32px;opacity:.5;
+  }
 
   .num{font-family:'JetBrains Mono',monospace;font-size:.64rem;letter-spacing:.18em;font-weight:700;color:var(--accent);margin-bottom:.9rem}
   .theme-tag{align-self:flex-start;font-family:'JetBrains Mono',monospace;font-size:.55rem;letter-spacing:.13em;text-transform:uppercase;padding:.3rem .62rem;border:1px solid var(--card-border);border-radius:20px;color:var(--accent);margin-bottom:1rem}
   .edition h2{font-family:'Playfair Display',serif;font-weight:700;font-size:clamp(1.5rem,3.2vw,1.95rem);line-height:1.06;color:var(--card-ink);margin-bottom:.4rem}
   .edition h2::after{content:"";display:block;width:44px;height:2px;background:var(--accent);margin-top:.6rem}
   .edition .desc{font-size:.93rem;line-height:1.5;color:var(--card-soft);margin:.6rem 0 1.1rem;flex:1}
-  .topics{display:flex;flex-wrap:wrap;gap:.35rem;margin-bottom:1.35rem}
+  .topics{display:flex;flex-wrap:wrap;gap:.35rem;margin-bottom:0;
+    opacity:0;max-height:0;overflow:hidden;margin-top:0;
+    transition:opacity .25s,max-height .3s ease,margin-top .3s ease}
+  .edition:hover .topics,.edition:focus-within .topics{
+    opacity:1;max-height:160px;margin-top:.6rem;margin-bottom:1rem}
   .topics span{font-family:'JetBrains Mono',monospace;font-size:.57rem;letter-spacing:.04em;color:var(--card-faint);background:var(--chip-bg);padding:.2rem .5rem;border-radius:5px}
   .open-tag{font-family:'JetBrains Mono',monospace;font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--card-ink);display:inline-flex;align-items:center;gap:.5rem;transition:gap .25s,color .25s}
   .edition:hover .open-tag{color:var(--accent);gap:.85rem}
@@ -103,10 +126,19 @@
       repeating-radial-gradient(circle at 80% 20%,transparent 0 7px,rgba(201,162,75,.5) 7px 7.8px),
       repeating-radial-gradient(circle at 80% 20%,transparent 0 15px,rgba(201,162,75,.28) 15px 15.7px);
   }
-  .edition.certs:hover{box-shadow:0 1px 0 rgba(201,162,75,.2) inset, 0 26px 46px -18px rgba(0,0,0,.7)}
+  .edition.certs:hover,.edition.certs:focus-within{box-shadow:0 1px 0 rgba(201,162,75,.2) inset, 0 30px 50px -18px rgba(0,0,0,.7)}
 
   footer{border-top:3px double var(--ink);padding:1.6rem 0 3rem;text-align:center;font-family:'JetBrains Mono',monospace;font-size:.64rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint)}
   ::selection{background:var(--accent-2);color:var(--paper)}
+  @media (prefers-reduced-motion: reduce){
+    .editions .edition{transform:none !important}
+    .edition:hover,.edition:focus-within{transform:none !important}
+    *, *::before, *::after{
+      animation-duration:.001ms !important;
+      animation-iteration-count:1 !important;
+      transition-duration:.001ms !important;
+    }
+  }
 </style>
 <link rel="canonical" href="https://suhasatluri.github.io/Explainers/">
 <script type="application/ld+json">
@@ -144,6 +176,7 @@
   <main class="editions">
 
     <a class="edition kafka" href="kafka-explained.html">
+      <div class="fold"></div><div class="shelf-shadow"></div>
       <div class="num">Edition 01</div>
       <span class="theme-tag">The Kafka Times</span>
       <h2>Apache Kafka</h2>
@@ -153,6 +186,7 @@
     </a>
 
     <a class="edition certs" href="certificates-explained.html">
+      <div class="fold"></div><div class="shelf-shadow"></div>
       <div class="num">Edition 02</div>
       <span class="theme-tag">Bureau of Trust</span>
       <h2>Certificates</h2>
@@ -162,6 +196,7 @@
     </a>
 
     <a class="edition security" href="security-explained.html">
+      <div class="fold"></div><div class="shelf-shadow"></div>
       <div class="num">Edition 03</div>
       <span class="theme-tag">The Security Times</span>
       <h2>The Security Stack</h2>
