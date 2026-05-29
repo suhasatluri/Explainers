@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Bureau of Trust — Certificates, Explained as Passports</title>
-<meta name="description" content="An interactive, no-jargon explainer of TLS certificates — keys, leaf, intermediate and root certs, the chain of trust, keystores vs truststores, and CSRs — all told through the metaphor of passports and border control.">
+<title>The Bureau of Trust — TLS Certificates, Explained as Passports</title>
+<meta name="description" content="TLS certificates explained interactively — public/private keys, leaf and root certs, chain of trust, keystores, truststores, and CSRs as passport control.">
 <meta property="og:type" content="website">
 <meta property="og:title" content="The Bureau of Trust — Certificates, Explained">
 <meta property="og:description" content="Certificates, chains of trust, keystores and truststores — finally made intuitive, through passports and border control.">
@@ -12,6 +12,22 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Spectral:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="canonical" href="https://suhasatluri.github.io/Explainers/certificates-explained.html">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "The Bureau of Trust — TLS Certificates, Explained as Passports",
+  "description": "TLS certificates explained interactively — public/private keys, leaf and root certs, chain of trust, keystores, truststores, and CSRs as passport control.",
+  "author": { "@type": "Person", "name": "Suhas Atluri" },
+  "publisher": { "@type": "Organization", "name": "The Explainers" },
+  "datePublished": "2026-05-27",
+  "dateModified": "2026-05-29",
+  "mainEntityOfPage": "https://suhasatluri.github.io/Explainers/certificates-explained.html",
+  "inLanguage": "en",
+  "keywords": "TLS certificates, X.509, chain of trust, public key, private key, keystore, truststore, CSR"
+}
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 <style>
@@ -371,7 +387,7 @@
   <div class="wrap">
     <div class="stampline">
       <span>Form X.509 · Rev X</span>
-      <span>Dept. of Digital Identity</span>
+      <span>Last reviewed: May 2026</span>
       <span>No. 0001-TLS</span>
     </div>
 
