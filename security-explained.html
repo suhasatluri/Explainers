@@ -148,6 +148,56 @@
   .heroPipe.locked::after{content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:24px;height:24px;background:var(--teal);border:2.5px solid var(--ink);border-radius:50%;display:flex;align-items:center;justify-content:center}
   .heroPipe.locked::before{content:"🔒";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2;font-size:14px}
 
+  /* ---------- terminal code block ---------- */
+  .terminal{
+    margin:1.6rem 0;
+    border:2px solid var(--ink);
+    border-radius:8px;
+    background:#1a1410;
+    box-shadow:5px 5px 0 var(--line);
+    overflow:hidden;
+    position:relative;
+  }
+  .terminal-bar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:.55rem .9rem;
+    background:#241c14;
+    border-bottom:1px solid #3a2e22;
+  }
+  .terminal-bar .label{
+    font-family:'Space Mono',monospace;font-size:.62rem;
+    letter-spacing:.14em;text-transform:uppercase;
+    color:#a89878;
+  }
+  .terminal-bar .copy{
+    font-family:'Space Mono',monospace;font-size:.6rem;
+    letter-spacing:.1em;text-transform:uppercase;
+    color:#cdbd9d;background:transparent;
+    border:1.5px solid #4a3a28;border-radius:4px;
+    padding:.18rem .5rem;cursor:pointer;
+    transition:color .15s,border-color .15s,background .15s;
+  }
+  .terminal-bar .copy:hover{color:#fff;border-color:#7a6a4f;background:#3a2e22}
+  .terminal-bar .copy.copied{color:#9fcf8f;border-color:#9fcf8f}
+  .terminal pre{
+    margin:0;padding:1.1rem 1.2rem;
+    font-family:'Space Mono',monospace;font-size:.86rem;
+    line-height:1.65;
+    color:#f3e9d6;
+    overflow-x:auto;
+    white-space:pre;
+  }
+  .terminal pre .c{color:#a89878;font-style:italic}
+  .terminal pre .k{color:#e7a52f}
+  .terminal pre .f{color:#f3e9d6;opacity:.85}
+  .terminal pre .s{color:#9fcf8f}
+
+  .terminal-caption{
+    font-family:'Newsreader',Georgia,serif;font-style:italic;
+    color:var(--ink-soft);font-size:.95rem;
+    margin:.7rem .2rem 0;line-height:1.5;
+  }
+
   .btn{
     font-family:'Space Mono',monospace;font-size:.82rem;letter-spacing:.08em;text-transform:uppercase;font-weight:700;
     background:var(--red);color:var(--paper);border:2.5px solid var(--ink);padding:.85rem 1.6rem;border-radius:10px;
@@ -730,6 +780,27 @@
         <li>mTLS gives you <b>identity of the caller</b> but not really <b>identity of the human user behind the call</b>, or fine-grained permissions. That's why modern stacks pair it with tokens.</li>
       </ul>
     </details>
+
+    <div class="terminal" role="region" aria-label="mTLS curl example">
+      <div class="terminal-bar">
+        <span class="label">▶ At the terminal</span>
+        <button class="copy" type="button" data-copy-target="mtls-cli">Copy</button>
+      </div>
+      <pre id="mtls-cli"><span class="c"># Calling an mTLS-protected endpoint — present a client cert</span>
+<span class="k">curl</span> https://api.example.com/data <span class="f">\</span>
+  <span class="f">--cert</span> client.crt <span class="f">\</span>
+  <span class="f">--key</span> client.key
+
+<span class="c"># Or with a single PKCS#12 bundle that contains both</span>
+<span class="k">curl</span> https://api.example.com/data <span class="f">\</span>
+  <span class="f">--cert</span> client.p12:password <span class="f">\</span>
+  <span class="f">--cert-type</span> P12</pre>
+    </div>
+    <p class="terminal-caption">Same protocol as a regular HTTPS call — but the
+    client also presents a passport. The server checks both before letting the
+    conversation continue. Two forms because both turn up in the wild:
+    separate cert + key (Unix convention) and a single password-protected
+    bundle (Java / Windows convention).</p>
   </div>
 </section>
 
@@ -986,6 +1057,23 @@
         <p class="why">Signing the first two parts with the Auth Server's private key. Anyone with the <b>public</b> key can verify it's authentic and untampered — without calling the Auth Server every time.</p>
       </div>
     </div>
+
+    <div class="terminal" role="region" aria-label="JWT self-decode example">
+      <div class="terminal-bar">
+        <span class="label">▶ At the terminal — decode any JWT yourself</span>
+        <button class="copy" type="button" data-copy-target="jwt-cli">Copy</button>
+      </div>
+      <pre id="jwt-cli"><span class="c"># Decode the payload of any JWT — no library needed</span>
+<span class="k">echo</span> <span class="s">"eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjMiLCJuYW1lIjoiSmFuZSBEb2UiLCJleHAiOjE3MjE2MDAwMDB9.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"</span> <span class="f">\</span>
+  | <span class="k">cut</span> <span class="f">-d</span>. <span class="f">-f2</span> <span class="f">\</span>
+  | <span class="k">tr</span> <span class="s">'_-'</span> <span class="s">'/+'</span> <span class="f">\</span>
+  | <span class="k">base64</span> <span class="f">-d</span> 2&gt;/dev/null <span class="f">\</span>
+  | <span class="k">jq</span> .</pre>
+    </div>
+    <p class="terminal-caption">Paste this into a terminal. What comes out is
+    the same JSON shown in the Payload box above — which is exactly why you
+    must never put a secret in a JWT payload. Anyone holding the token can
+    run this trick.</p>
 
     <div class="miniGloss" style="margin-top:1.5rem">
       <b>Signed ≠ encrypted</b>
@@ -1835,6 +1923,37 @@
     setView();
   })();
 
+  /* ===== copy-to-clipboard for .terminal blocks ===== */
+  document.querySelectorAll('.terminal .copy').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var targetId = btn.getAttribute('data-copy-target');
+      var pre = document.getElementById(targetId);
+      if(!pre) return;
+      var text = pre.innerText;
+      var done = function(){
+        var original = btn.textContent;
+        btn.textContent = 'Copied';
+        btn.classList.add('copied');
+        setTimeout(function(){
+          btn.textContent = original;
+          btn.classList.remove('copied');
+        }, 1400);
+      };
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(done).catch(function(){
+          var r = document.createRange();
+          r.selectNodeContents(pre);
+          var s = window.getSelection();
+          s.removeAllRanges(); s.addRange(r);
+        });
+      } else {
+        var r = document.createRange();
+        r.selectNodeContents(pre);
+        var s = window.getSelection();
+        s.removeAllRanges(); s.addRange(r);
+      }
+    });
+  });
 })();
 </script>
 <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "88acd29ff3754619b75a70f403821270"}'></script><!-- End Cloudflare Web Analytics -->
