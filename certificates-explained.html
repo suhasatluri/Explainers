@@ -103,6 +103,28 @@
     color:var(--burgundy-2);display:inline-flex;align-items:center;gap:.6rem;margin-bottom:1rem;
   }
   .kicker::before{content:"";width:26px;height:2px;background:var(--gold)}
+  .trythis{
+    display:inline-flex;align-items:center;gap:.35rem;
+    font-family:'Space Mono',monospace;font-size:.62rem;
+    letter-spacing:.12em;text-transform:uppercase;font-weight:700;
+    color:var(--accent-trythis, var(--red));
+    border:1.5px solid currentColor;
+    background:rgba(216,58,35,.06);
+    padding:.22rem .55rem;border-radius:4px;
+    vertical-align:middle;
+    line-height:1;
+    --accent-trythis: var(--gold-deep, #7d5f1f);
+    background:rgba(168,132,47,.08);
+  }
+  .skip-btn{
+    font-family:'JetBrains Mono',monospace;font-size:.7rem;
+    letter-spacing:.08em;text-transform:uppercase;
+    background:transparent;border:1.5px solid var(--line);
+    color:var(--ink-soft);padding:.45rem .8rem;
+    border-radius:4px;cursor:pointer;
+    transition:color .15s,border-color .15s,background .15s;
+  }
+  .skip-btn:hover{color:var(--ink);border-color:var(--navy);background:var(--paper-3)}
   h2.head{font-family:'Marcellus',serif;font-weight:400;font-size:clamp(2rem,5.6vw,3.5rem);line-height:1.05;letter-spacing:.005em;margin-bottom:1rem;color:var(--navy)}
   .lede{font-size:clamp(1.05rem,2.4vw,1.28rem);color:var(--ink-soft);max-width:64ch;margin-bottom:2.5rem}
   .reveal{opacity:1}
@@ -492,6 +514,7 @@
   <div class="wrap">
     <span class="kicker reveal">What's On The Page</span>
     <h2 class="head reveal">Anatomy of one certificate</h2>
+    <span class="trythis">▶ Interactive</span>
     <p class="lede reveal">Open any passport and the same fields appear. A certificate is identical — just machine-readable. Tap a field to see what it's really called and why it's there.</p>
 
     <div class="anat reveal">
@@ -530,6 +553,7 @@
   <div class="wrap">
     <span class="kicker reveal">Who Vouches For Whom</span>
     <h2 class="head reveal">Root, Intermediate, Leaf</h2>
+    <span class="trythis">▶ Interactive</span>
     <p class="lede reveal">Authority comes in tiers, exactly like a government. The top almost never signs anything directly — it delegates. Tap each tier to meet it.</p>
 
     <div class="tiers reveal" id="tierStack">
@@ -607,6 +631,7 @@
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.7rem;flex-wrap:wrap;gap:.5rem">
             <span style="font-family:'JetBrains Mono',monospace;font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--burgundy-2)">Border guard · inspection log</span>
             <button class="btn" id="inspectBtn">Present passport ▸</button>
+            <button class="skip-btn" id="inspectSkip">Skip to end →</button>
           </div>
           <div class="insp-log" id="inspLog">
             <div class="logline show"><span class="li">▸</span><span>Awaiting traveller. Choose a scenario and present the passport.</span></div>
@@ -674,6 +699,7 @@
   <div class="wrap">
     <span class="kicker reveal">The Great Confusion, Settled</span>
     <h2 class="head reveal">Keystore vs Truststore</h2>
+    <span class="trythis">▶ Interactive</span>
     <p class="lede reveal">Almost everyone who's lost an afternoon to certificates lost it right here. Two boxes, two completely different jobs. Once you see them as <em>your wallet</em> vs <em>the guard's recognition list</em>, the confusion evaporates.</p>
 
     <div class="kt-intro reveal">
@@ -951,10 +977,28 @@
   function showErr(txt){ errAside.textContent = "client error: " + txt; errAside.className = "err-aside show"; }
 
   var running = false;
+  function skipToEnd(){
+    if (scenario === "expired"){
+      setLink("leaf","fail"); statuses.leaf.textContent="\u2717 EXPIRED";
+      placeStamp("REJECTED", false); showErr("certificate has expired");
+    } else if (scenario === "selfsigned"){
+      setLink("leaf","fail"); statuses.leaf.textContent="\u2717 NO AUTHORITY";
+      placeStamp("REJECTED", false); showErr("self-signed certificate");
+    } else if (scenario === "nointer"){
+      setLink("leaf","pass"); statuses.leaf.textContent="\u2713 read";
+      placeStamp("REJECTED", false); showErr("unable to get local issuer certificate");
+    } else {
+      setLink("leaf","pass"); statuses.leaf.textContent="\u2713 OK";
+      setLink("inter","pass"); statuses.inter.textContent="\u2713 OK";
+      setLink("root","pass"); statuses.root.textContent="\u2713 TRUSTED";
+      placeStamp("ADMITTED", true);
+    }
+  }
   inspectBtn.addEventListener("click", function(){
     if (running) return; running = true;
     resetChain();
     inspLog.innerHTML = "";
+    if (reduce) { skipToEnd(); running = false; return; }
     var seq = Promise.resolve();
     seq = seq.then(function(){ return logLine("Traveller presents a passport for <b>api.example.com</b>.", "step", 150); });
 
@@ -991,6 +1035,13 @@
     seq = seq.then(function(){ setLink("root","pass"); statuses.root.textContent="\u2713 TRUSTED"; return logLine("Yes \u2014 the chain ends at a root I already trust. Anchored.", "good", 600); });
     seq = seq.then(function(){ return logLine("Chain complete: leaf \u2190 intermediate \u2190 trusted root.", "good", 400); });
     seq = seq.then(function(){ placeStamp("ADMITTED", true); running=false; });
+  });
+
+  document.getElementById("inspectSkip").addEventListener("click", function(){
+    running = false;
+    resetChain();
+    inspLog.innerHTML = "";
+    skipToEnd();
   });
   resetChain();
 

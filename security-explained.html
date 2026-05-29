@@ -97,6 +97,26 @@
     color:var(--red-deep);display:inline-flex;align-items:center;gap:.6rem;margin-bottom:1rem;
   }
   .kicker::before{content:"";width:28px;height:2px;background:var(--red)}
+  .trythis{
+    display:inline-flex;align-items:center;gap:.35rem;
+    font-family:'Space Mono',monospace;font-size:.62rem;
+    letter-spacing:.12em;text-transform:uppercase;font-weight:700;
+    color:var(--accent-trythis, var(--red));
+    border:1.5px solid currentColor;
+    background:rgba(216,58,35,.06);
+    padding:.22rem .55rem;border-radius:4px;
+    vertical-align:middle;
+    line-height:1;
+  }
+  .skip-btn{
+    font-family:'Space Mono',monospace;font-size:.7rem;
+    letter-spacing:.08em;text-transform:uppercase;
+    background:transparent;border:1.5px solid var(--line);
+    color:var(--ink-soft);padding:.45rem .8rem;
+    border-radius:4px;cursor:pointer;
+    transition:color .15s,border-color .15s,background .15s;
+  }
+  .skip-btn:hover{color:var(--ink);border-color:var(--ink);background:var(--paper-2)}
   h2.head{font-family:'Fraunces',serif;font-weight:900;font-size:clamp(2rem,6vw,3.6rem);line-height:1.02;letter-spacing:-.025em;margin-bottom:1rem}
   .lede{font-size:clamp(1.05rem,2.4vw,1.3rem);color:var(--ink-soft);max-width:62ch;margin-bottom:2.5rem}
 
@@ -487,6 +507,7 @@
   <div class="wrap">
     <span class="kicker">The Stack</span>
     <h2 class="head">Everything lives on a different floor</h2>
+    <span class="trythis">▶ Interactive</span>
     <p class="lede">
       One reason these terms get muddled: people compare things that don't live at the same level.
       TLS and OAuth aren't competitors — they're on different floors of the building. Tap a floor to see what it's actually doing.
@@ -614,6 +635,7 @@
       <div class="hs-controls">
         <button class="btn" id="tlsPlay">▶ Play TLS handshake</button>
         <button class="btn ghost small" id="tlsReset">Reset</button>
+        <button class="skip-btn" id="tlsSkip">Skip to end →</button>
         <div class="hs-step" id="tlsStep">Ready. Click <b>Play</b>.</div>
       </div>
     </div>
@@ -693,6 +715,7 @@
       <div class="hs-controls">
         <button class="btn" id="mtlsPlay">▶ Play mTLS handshake</button>
         <button class="btn ghost small" id="mtlsReset">Reset</button>
+        <button class="skip-btn" id="mtlsSkip">Skip to end →</button>
         <div class="hs-step" id="mtlsStep">Ready. Click <b>Play</b>.</div>
       </div>
     </div>
@@ -856,6 +879,7 @@
     <div class="hs-controls" style="margin-top:1rem">
       <button class="btn" id="oauthPlay">▶ Run flow</button>
       <button class="btn ghost small" id="oauthReset">Reset</button>
+      <button class="skip-btn" id="oauthSkip">Skip to end →</button>
       <div class="hs-step" id="oauthStep">Ready. Six steps total.</div>
     </div>
 
@@ -919,6 +943,7 @@
   <div class="wrap">
     <span class="kicker">Floor 1 · The token format</span>
     <h2 class="head">JWT — the paper the passes are printed on</h2>
+    <span class="trythis">▶ Interactive</span>
     <p class="lede">
       A <b>JSON Web Token</b> is a format, not a protocol. Three Base64-encoded chunks joined by dots:
       <code>header.payload.signature</code>. Tap any chunk to see what's inside.
@@ -1274,6 +1299,7 @@
     var step = document.getElementById(opts.step);
     var playBtn = document.getElementById(opts.play);
     var resetBtn = document.getElementById(opts.reset);
+    var skipBtn = document.getElementById(opts.skip);
 
     // marker IDs are scoped per-instance (so TLS & mTLS don't collide)
     var AH_INK   = 'url(#ah-ink-'   + opts.idScope + ')';
@@ -1453,19 +1479,40 @@
       }
     }
 
+    function showFinalState(){
+      clearStage();
+      // Draw all arrows in final (muted) state, show certs, light pipe
+      for(var i = 0; i < steps.length; i++){
+        var s = steps[i];
+        if(s.showServerCert && serverCert) serverCert.setAttribute('opacity','1');
+        if(s.showClientCert && clientCert) clientCert.setAttribute('opacity','1');
+        if(s.kind === 'pipe'){
+          pipeEnc.setAttribute('opacity','1');
+        } else {
+          var arrow = buildArrow(s);
+          if(arrow){ arrowsLayer.appendChild(arrow.g); arrow.g.classList.add('muted'); }
+        }
+      }
+      // Show final caption
+      var last = steps[steps.length - 1];
+      step.innerHTML = last.caption;
+      playBtn.disabled = false;
+    }
+
     playBtn.addEventListener('click', play);
     resetBtn.addEventListener('click', clearStage);
+    skipBtn.addEventListener('click', function(){ showFinalState(); });
     clearStage();
   }
 
   setupHandshake({
     stage:'tlsStage', step:'tlsStep',
-    play:'tlsPlay', reset:'tlsReset',
+    play:'tlsPlay', reset:'tlsReset', skip:'tlsSkip',
     idScope:'tls', mutual:false
   });
   setupHandshake({
     stage:'mtlsStage', step:'mtlsStep',
-    play:'mtlsPlay', reset:'mtlsReset',
+    play:'mtlsPlay', reset:'mtlsReset', skip:'mtlsSkip',
     idScope:'mtls', mutual:true
   });
 
@@ -1562,8 +1609,16 @@
       stepInfo.innerHTML = '✅ <b>Done.</b> The API verified the token and returned data — and the client never touched the password.';
     }
 
+    var oauthSkipBtn = document.getElementById('oauthSkip');
+    function oauthFinalState(){
+      reset();
+      activate(6);
+      stepInfo.innerHTML = '✅ <b>Done.</b> The API verified the token and returned data — and the client never touched the password.';
+    }
+
     playBtn.addEventListener('click', play);
     resetBtn.addEventListener('click', reset);
+    oauthSkipBtn.addEventListener('click', oauthFinalState);
   })();
 
   // ====================================================
