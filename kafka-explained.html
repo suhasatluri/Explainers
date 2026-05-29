@@ -852,10 +852,6 @@
   /* ===== GSAP scroll reveals ===== */
   if(hasGSAP && !reduce && window.ScrollTrigger){
     gsap.registerPlugin(ScrollTrigger);
-    gsap.utils.toArray('.reveal').forEach(function(el){
-      gsap.from(el,{opacity:0,y:34,duration:.7,ease:'power3.out',
-        scrollTrigger:{trigger:el,start:'top 86%'}});
-    });
     // masthead intro stagger
     gsap.from('#hero .masthead',{opacity:0,y:24,duration:.8,ease:'power3.out'});
     gsap.from('#hero .crest',{opacity:0,scale:.85,duration:.7,delay:.1,stagger:.12,ease:'power3.out'});

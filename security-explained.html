@@ -1780,15 +1780,6 @@
     setView();
   })();
 
-  // ====================================================
-  // Reveal on scroll (optional, no-op if no GSAP)
-  // ====================================================
-  if(hasGSAP && !reduce){
-    if(window.ScrollTrigger){ gsap.registerPlugin(ScrollTrigger); }
-    document.querySelectorAll('section .head, section .lede, section .panel, section .door, section .jpart, section .dCard, section .ctCol, section .migCol, section .layer').forEach(function(el){
-      gsap.from(el,{opacity:0, y:18, duration:.55, ease:'power2.out', scrollTrigger:{trigger:el, start:'top 90%'}});
-    });
-  }
 })();
 </script>
 <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "88acd29ff3754619b75a70f403821270"}'></script><!-- End Cloudflare Web Analytics -->

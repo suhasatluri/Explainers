@@ -362,6 +362,13 @@
   footer{text-align:center;font-family:'JetBrains Mono',monospace;font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:#8a98b3;margin-top:3rem;border-top:1px solid var(--navy-soft);padding-top:1.4rem}
 
   ::selection{background:var(--gold);color:var(--navy)}
+  @media (prefers-reduced-motion: reduce){
+    *, *::before, *::after{
+      animation-duration:.001ms !important;
+      animation-iteration-count:1 !important;
+      transition-duration:.001ms !important;
+    }
+  }
 </style>
 </head>
 <body>
@@ -755,6 +762,8 @@
 (function(){
   "use strict";
   var hasGSAP = typeof gsap !== "undefined";
+  var reduce = window.matchMedia &&
+               window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (hasGSAP && gsap.registerPlugin) { try { gsap.registerPlugin(ScrollTrigger); } catch(e){} }
 
   /* ---------- progress + active nav ---------- */
@@ -775,15 +784,7 @@
   window.addEventListener("scroll", onScroll, {passive:true});
   onScroll();
 
-  /* ---------- reveal ---------- */
-  if (hasGSAP){
-    document.querySelectorAll(".reveal").forEach(function(el){
-      gsap.fromTo(el, {y:24, opacity:0}, {
-        y:0, opacity:1, duration:.7, ease:"power2.out",
-        scrollTrigger:{ trigger:el, start:"top 86%" }
-      });
-    });
-  }
+  /* ---------- reveal removed (content appears immediately) ---------- */
 
   /* ---------- HERO passport open + stamps ---------- */
   var passport = document.getElementById("passport");
@@ -809,7 +810,7 @@
     }
   }
   // initial gentle float
-  if (hasGSAP){ gsap.to(".booklet", {y:-6, duration:2.4, repeat:-1, yoyo:true, ease:"sine.inOut"}); }
+  if (hasGSAP && !reduce){ gsap.to(".booklet", {y:-6, duration:2.4, repeat:-1, yoyo:true, ease:"sine.inOut"}); }
 
   /* ---------- KEYS: sign / verify / forge ---------- */
   var signInput = document.getElementById("signInput");
